@@ -1,0 +1,291 @@
+TICKET MKT-018 — Website copy polish using founder narrative
+Ticket ID
+
+MKT-018
+
+Title
+
+Public website copy system grounded in founder narrative (conversion + credibility)
+
+Objective
+
+Refine all public-facing website copy so it:
+
+reflects the founder narrative consistently
+
+explains the product in plain language
+
+speaks to multiple personas without fragmenting the page
+
+reinforces trust and legal posture
+
+supports the calculator as the primary engagement driver
+
+This is a copy system, not just headline tweaks.
+
+Non-goals
+
+No SEO long-form content
+
+No blog strategy
+
+No testimonials or promises
+
+No pricing pages
+
+No legal document drafting
+
+Preconditions
+
+MKT-017 (Founder narrative + pitch scaffold) complete
+
+Marketing site structure exists (hero → calculator → how it works → personas → trust → CTA)
+
+Calculator widget embedded
+
+HubSpot capture working
+
+Core Copy Principles (locked)
+
+Clear > clever
+
+Equity, not debt language everywhere
+
+Explain before persuade
+
+Invite exploration, don’t push conversion
+
+Always non-binding, illustrative framing
+
+Page-by-Page Copy Requirements
+A) Global header + footer
+
+Header
+
+Logo (left)
+
+“Join beta” button (right)
+
+Links to https://app.fractpath.com/signup
+
+Button microcopy
+
+Primary: “Join the beta”
+
+Secondary (if used): “See how it works”
+
+Footer
+
+Short positioning line:
+
+“FractPath facilitates shared home-equity agreements between private parties.”
+
+Links:
+
+Privacy
+
+Terms
+
+Contact
+
+B) Hero section (top of page)
+
+Goal: immediate clarity + curiosity
+
+Headline (example direction)
+
+A different path to home equity — without more debt
+
+Subheadline
+
+FractPath lets homeowners and buyers share equity through structured agreements instead of loans.
+
+Primary CTA
+
+“See how it works” → scroll to calculator
+
+Secondary CTA
+
+“Learn the model” → scroll to How It Works
+
+Legal microcopy (small, below CTAs)
+
+Illustrative only. Not a loan or investment advice.
+
+C) Calculator section (primary engagement)
+
+Intro copy (short)
+
+Model a shared-equity scenario in minutes.
+
+Helper text
+
+Adjust a few inputs to see how equity, value, and outcomes change over time.
+
+Persona toggle labels
+
+Homeowner
+
+Buyer
+
+Realtor
+
+Output framing
+
+Use language like:
+
+“Estimated”
+
+“Illustrative outcome”
+
+“Based on selected assumptions”
+
+Floor / ceiling / timing callouts
+
+Small badges or tooltips:
+
+“Floor protection applied”
+
+“Exit timing affects payout”
+
+“Ceiling caps upside”
+
+Teaser line (below outputs)
+
+Advanced terms and negotiation tools available inside the app.
+
+D) How It Works (3–4 steps, simple)
+
+Step 1: Model
+
+Explore a shared-equity scenario with transparent assumptions.
+
+Step 2: Align
+
+Invite the other party and shape terms together—no fine print surprises.
+
+Step 3: Formalize
+
+Accepted terms are summarized and handed off to trusted legal and title partners.
+
+Step 4: Track
+
+Monitor equity and value over time in one place.
+
+Avoid:
+
+“Instant”
+
+“Guaranteed”
+
+“Automated closing”
+
+E) Persona sections (benefits, not features)
+
+Each persona gets:
+
+A short header
+
+3–4 benefit bullets
+
+One line of reassurance
+
+Homeowner
+
+Access equity without adding monthly debt
+Stay in your home
+Clear exit terms, defined upfront
+No forced sale
+
+Buyer
+
+Gain equity over time
+No property management
+Transparent path to ownership
+Upside aligned with the homeowner
+
+Realtor
+
+Participate as a referrer or co-pilot
+Transparent commissions
+Support clients beyond traditional financing
+No advisory liability
+
+F) Trust & credibility section
+
+Include:
+
+“Why FractPath”
+
+Structured, not improvised
+
+Recorded, not informal
+
+Partner-backed, not DIY
+
+Optional proof points:
+
+“Beta launching in Maryland”
+
+“Built with title partner collaboration”
+
+“Founder-led, product-driven”
+
+No logos yet unless confirmed.
+
+G) Closing CTA
+
+Headline
+
+Explore a better way to share equity
+
+CTA
+
+“Join the beta”
+
+Subtext
+
+Limited beta. Manual guidance included.
+
+Legal Language Guardrails (must apply everywhere)
+
+Use “scenario”, “terms summary”, “illustrative”
+
+Avoid “offer”, “return”, “yield”
+
+Always reinforce:
+
+not a loan
+
+not advice
+
+final terms via executed agreement
+
+Cross-check against OPS-003 + OPS-004.
+
+Acceptance Criteria (Definition of Done)
+
+All sections use consistent narrative voice
+
+Calculator copy reinforces non-binding framing
+
+Personas addressed without splitting the page
+
+No prohibited language appears
+
+CTAs align with intended flows
+
+Copy feels calm, confident, and credible
+
+Deliverables
+
+Create:
+
+docs/marketing/website-copy/
+├─ hero.md
+├─ calculator.md
+├─ how-it-works.md
+├─ personas.md
+├─ trust.md
+├─ ctas.md
+└─ legal-microcopy.md

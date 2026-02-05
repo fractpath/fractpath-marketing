@@ -1,0 +1,243 @@
+TICKET MKT-004 — Calculator UI + gating (blur outputs until email)
+Ticket ID
+
+MKT-004
+
+Title
+
+Calculator UI + Email gate (blur outputs until submit)
+
+Objective
+
+Implement the calculator UI shell (inputs + outputs layout + chart container) and the email gate behavior:
+
+outputs are teased/blurred until email is submitted
+
+after email submit, outputs reveal and a lead payload is prepared for HubSpot (actual HubSpot API route is MKT-006)
+
+This ticket should make the homepage feel like a real product demo even before the full math logic is implemented.
+
+Non-goals
+
+No final math logic (that’s MKT-005)
+
+No HubSpot integration call (that’s MKT-006), but we will define the payload shape
+
+No address lookup / Zillow / AVM
+
+No portal features
+
+Preconditions
+
+MKT-001..003 complete
+
+Homepage sections exist with correct anchors
+
+Persona toggle system working (Homeowner/Buyer/Realtor)
+
+Dark mode + cyan accent tokens exist
+
+Brand assets stored under public/brand/* and used in header
+
+Implementation Requirements
+A) Header update (must be implemented in this ticket)
+
+Update TopNav to match your requirement:
+
+Left: FractPath logo
+
+uses fractpath-logo-black.svg in light mode
+
+uses fractpath-logo-white.svg in dark mode
+
+Right: “Sign up for beta” button linking to:
+
+https://app.fractpath.com/signup
+
+Nav links (middle optional, but include at least):
+
+How it works → #how-it-works
+
+FAQ → #faq
+
+Realtor beta → #realtor-beta
+
+Accessibility:
+
+logo has alt text
+
+buttons and links keyboard accessible
+
+B) Calculator section structure
+
+Create/update:
+
+src/components/sections/CalculatorSection.tsx
+
+It must render:
+
+PersonaTabs (from MKT-003)
+
+Calculator Card with:
+
+Inputs column
+
+Outputs column
+
+Chart container area
+
+Use shadcn:
+
+Card, Input, Label, Button, Tabs, Separator, Badge as needed
+
+C) Inputs (UI only; basic validation)
+
+Inputs should be shown per frozen spec:
+
+Shared inputs (all personas):
+
+Property Value (number, required)
+
+Upfront contribution (number, optional)
+
+Monthly contribution (number, optional)
+
+Time horizon (years slider; default e.g. 7)
+
+Appreciation rate (advanced toggle; default 3.5%)
+
+Persona-specific inputs:
+
+Homeowner: desired cash-out amount (optional)
+
+Buyer: target ownership % (optional)
+
+Realtor:
+
+referral flat (optional)
+
+share % (optional)
+
+Validation:
+
+Property value must be > 0
+
+At least one of upfront or monthly should be > 0 (otherwise show a gentle inline warning)
+
+Slider must be within sane range (e.g., 1–30 years)
+
+D) Outputs layout (teaser + blur until email)
+
+The output panel must show:
+
+A hero metric area (label + value placeholder)
+
+3–4 “StatCard” outputs (placeholder values until MKT-005)
+
+A chart container with placeholder chart (until MKT-005)
+
+Before email is submitted:
+
+show outputs in a blurred/obscured state
+
+show a CTA: “Reveal full results”
+
+when clicked, show an email input + “Reveal” button
+
+After email is submitted:
+
+reveal outputs (unblur)
+
+show a secondary CTA:
+
+“Create secure profile” → https://app.fractpath.com/signup
+
+Gating UX requirement:
+
+Do not use a modal (keep it inline for simplicity)
+
+Do not lose the user’s input state when gating
+
+E) Lead payload capture (local only for now)
+
+On email submit:
+
+store an in-memory “leadSubmitted” state
+
+build an object payload to send later to /api/lead (MKT-006)
+
+Create a helper:
+
+src/lib/leadPayload.ts
+
+It should export buildLeadPayload(...) that returns:
+
+{
+  email: string;
+  persona: "homeowner" | "buyer" | "realtor";
+  source: "homepage_calculator";
+  scenario_inputs: Record<string, any>;
+  scenario_outputs: Record<string, any>; // placeholder for now
+  deal_summary_text: string; // short human-readable summary
+}
+
+
+For now:
+
+scenario_outputs can be placeholders like "TBD"
+
+deal_summary_text can be a conservative summary:
+
+“Modeled {persona} scenario for property value $X with upfront $Y and monthly $Z over N years.”
+
+F) Chart placeholder (until MKT-005)
+
+Use recharts (or a placeholder div if recharts isn’t installed yet) but prefer installing recharts now so MKT-005 is straightforward.
+
+Chart placeholder behavior:
+
+should render with dummy data
+
+should respond to dark mode colors via CSS variables / tailwind classes
+
+no hard-coded colors except accent usage that respects AA contrast (cyan should be used for strokes/accents, not low-contrast fills)
+
+Acceptance Criteria (Definition of Done)
+
+Header matches requirement: logo left, “Sign up for beta” right
+
+Calculator inputs render and are persona-aware
+
+Outputs are blurred until email submitted
+
+After email submit, outputs reveal and “Create secure profile” CTA appears
+
+No modal; gating is inline
+
+No console errors
+
+Works on mobile (inputs stack above outputs)
+
+buildLeadPayload exists and returns correct shape
+
+Vercel build passes
+
+QA Checklist
+
+ Dark mode: readable, high contrast, cyan accent not used for body text
+
+ Keyboard: can tab through inputs and reveal flow
+
+ Email validation: minimal (“must include @”) and friendly errors
+
+ No regulated language creep (no “returns guaranteed”)
+
+Deliverables
+
+Updated TopNav using the brand assets under public/brand/
+
+CalculatorSection with inputs + outputs + gating
+
+src/lib/leadPayload.ts
+
+recharts installed and placeholder chart rendering (preferred)

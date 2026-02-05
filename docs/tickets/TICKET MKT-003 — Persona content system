@@ -1,0 +1,240 @@
+TICKET MKT-003 — Persona content system
+Ticket ID
+
+MKT-003
+
+Title
+
+Persona content system (Homeowner / Buyer / Realtor) + homepage wiring
+
+Objective
+
+Implement a single source of truth for persona-specific marketing copy and calculator labeling so the homepage can switch between Homeowner, Buyer, Realtor without hardcoding text across components. This enables fast iteration and prevents agent drift.
+
+This ticket must wire the persona toggle so it updates:
+
+Hero headline/subhead + CTAs
+
+Value prop cards
+
+Calculator input labels (not the logic yet)
+
+Output “hero metric” label placeholders
+
+Non-goals
+
+No HubSpot integration yet
+
+No real calculator math yet (MKT-005)
+
+No email gate yet (MKT-004)
+
+No investor persona (explicitly excluded for MVP)
+
+Preconditions
+
+MKT-001 completed (repo deploys)
+
+MKT-002 completed (shadcn/ui + UI kit primitives exist)
+
+Dark mode + cyan accent theme established in tokens
+
+Frozen spec exists: docs/marketing-homepage-spec.md
+
+Implementation Requirements
+A) Define persona types and defaults
+
+Create a strongly typed persona enum:
+
+homeowner
+
+buyer
+
+realtor
+
+Default persona on first load: homeowner (unless overridden by querystring; see optional below).
+
+B) Create persona content map (authoritative)
+
+Create file:
+
+src/content/personas.ts
+
+It must export:
+
+PERSONAS list (for tabs)
+
+personaContent object keyed by persona
+
+Each persona must include these fields:
+
+type PersonaKey = "homeowner" | "buyer" | "realtor";
+
+type PersonaContent = {
+  key: PersonaKey;
+  navLabel: string;
+
+  hero: {
+    eyebrow?: string;
+    headline: string;
+    subheadline: string;
+    primaryCtaLabel: string;
+    secondaryCtaLabel: string;
+  };
+
+  valueProps: Array<{
+    title: string;
+    body: string;
+  }>;
+
+  calculator: {
+    title: string;
+    description: string;
+
+    // shared inputs labels
+    labels: {
+      propertyValue: string;
+      upfront: string;
+      monthly: string;
+      horizonYears: string;
+      appreciationRate: string;
+    };
+
+    // persona-specific optional input labels (placeholders for later tickets)
+    optionalLabels: {
+      homeownerCashOut?: string;    // homeowner only
+      buyerTargetOwnership?: string; // buyer only
+      realtorReferralFlat?: string;  // realtor only
+      realtorSharePct?: string;      // realtor only
+    };
+
+    // hero output labels (placeholders)
+    heroMetric: {
+      label: string;
+      helperText: string;
+    };
+  };
+
+  howItWorks: {
+    steps: Array<{ title: string; body: string }>;
+  };
+
+  trust: {
+    bullets: string[]; // compliance-friendly
+  };
+};
+
+
+Copy tone requirements:
+
+friendly, confident, not salesy
+
+avoid regulated terms like “guaranteed returns”
+
+use “scenario,” “estimates,” “terms summary”
+
+avoid “investment” language on public pages
+
+C) Persona toggle component (stateful)
+
+Create component:
+
+src/components/persona/PersonaTabs.tsx
+
+Requirements:
+
+uses shadcn/ui Tabs
+
+updates persona state
+
+accessible keyboard navigation
+
+visible, simple
+
+D) Wire persona state through homepage sections
+
+Update src/app/page.tsx to:
+
+store persona state at page level (React state)
+
+pass persona content down to:
+
+Hero
+
+ValueProps
+
+CalculatorShell (placeholder)
+
+HowItWorks
+
+Trust section
+
+Create (or update) these section components (if not already present):
+
+src/components/sections/HeroSection.tsx
+
+src/components/sections/ValuePropsSection.tsx
+
+src/components/sections/CalculatorSection.tsx (UI only; no math)
+
+src/components/sections/HowItWorksSection.tsx
+
+src/components/sections/TrustSection.tsx
+
+Each section must accept the relevant portion of PersonaContent and render from it.
+
+E) Optional: querystring override (recommended for marketing links)
+
+Support ?persona=buyer / ?persona=realtor / ?persona=homeowner:
+
+on load, read persona param
+
+set initial persona
+
+ignore invalid values
+
+This is useful for persona-specific ads and links.
+
+Acceptance Criteria (Definition of Done)
+
+Persona toggle visibly switches between Homeowner/Buyer/Realtor
+
+When toggled, the following content changes:
+
+Hero headline + subheadline + CTA labels
+
+Value prop cards (3) content
+
+Calculator title/description and relevant input labels
+
+Trust bullets
+
+Default persona is homeowner
+
+No duplicated persona copy scattered across JSX files
+
+npm run build and Vercel deploy succeed
+
+Optional: ?persona=buyer sets persona correctly (if implemented)
+
+QA Checklist
+
+ Persona toggle works on mobile
+
+ Copy stays compliant (no “guaranteed return” language)
+
+ Tone is consistent and minimal
+
+ No console errors
+
+ All strings live in src/content/personas.ts
+
+Deliverables
+
+src/content/personas.ts with complete content for 3 personas
+
+PersonaTabs component
+
+Homepage sections wired to persona content map
+
+Updated homepage renders correctly in both light and dark mode

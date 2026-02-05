@@ -1,0 +1,385 @@
+TICKET MKT-020 — Agent prompts for calculator logic + visualization
+Ticket ID
+
+MKT-020
+
+Title
+
+Agent-ready prompts for calculator logic, scenario math, and data visualization (marketing-safe)
+
+Objective
+
+Create precise, constrained agent prompts that enable AI tools to build the marketing calculator logic and visuals such that:
+
+the math is consistent with your term sheet model
+
+outputs are illustrative and non-binding
+
+personas see tailored value framing
+
+floors, ceilings, and timing incentives are visible (but simplified)
+
+visuals are modern, minimal, and investor-presentable
+
+no app logic, deal creation, or persistence is introduced
+
+This calculator is a teaching + conversion tool, not the contract engine.
+
+Non-goals
+
+No deal persistence
+
+No user accounts
+
+No negotiation logic
+
+No payments
+
+No AVM calls
+
+No contract generation
+
+No backend APIs
+
+Canonical references (agents must treat as truth)
+
+Agents must adhere to:
+
+docs/marketing/website-copy/calculator.md
+
+Term model concepts from:
+
+Floors (FM)
+
+Ceilings (CM)
+
+Timing factor (early / standard / late)
+
+Persona framing rules from MKT-018
+
+Legal guardrails from OPS-003 / OPS-004
+
+Design system:
+
+shadcn/ui
+
+Tailwind
+
+Dark mode
+
+Cyan accent (AA compliant)
+
+Calculator scope (locked)
+Inputs (fixed defaults, editable)
+
+Property value (SV)
+
+Upfront contribution
+
+Monthly contribution
+
+Horizon (years)
+
+Rules:
+
+Inputs show $ and commas
+
+Internal values remain numeric
+
+Defaults are clearly referenced in outputs
+
+No “advanced inputs” on marketing site.
+
+Core derived values (marketing-safe)
+
+Agents may compute:
+
+Total capital contributed
+
+Estimated equity share (simplified)
+
+Estimated future property value (modeled appreciation)
+
+Buyer implied purchase price
+
+Homeowner remaining equity
+
+Illustrative exit outcomes:
+
+Early
+
+Standard
+
+Late
+
+Agents must not compute:
+
+IRR
+
+APR
+
+Yield
+
+Investment returns phrasing
+
+Visualization requirements
+Required visuals
+
+Equity split visualization
+
+Buyer vs Homeowner
+
+Donut or stacked bar
+
+Labeled as “illustrative”
+
+Value over time
+
+Simple line chart
+
+Current → horizon
+
+No real-time pricing
+
+Exit scenario comparison
+
+Three-column comparison
+
+Early / Standard / Late
+
+Shows:
+
+Buyer payout range
+
+Homeowner net range
+
+Floor / ceiling badges
+
+Persona-specific framing (copy-level only)
+Buyer view
+
+Emphasize:
+
+Path to ownership
+
+Equity accumulation
+
+Implied purchase price vs future value
+
+De-emphasize:
+
+Fees
+
+Platform mechanics
+
+Homeowner view
+
+Emphasize:
+
+Cash unlocked
+
+Remaining equity
+
+No new debt
+
+De-emphasize:
+
+Buyer upside framing
+
+Realtor view
+
+Emphasize:
+
+New deal path
+
+Expanded solution set
+
+Participation opportunity
+
+De-emphasize:
+
+Financial math details
+
+Agents must implement copy swaps only, not different math.
+
+A) Master calculator agent prompt
+
+Create:
+
+docs/marketing/agent-prompts/calculator-master.md
+
+
+Paste-ready prompt:
+
+You are building a marketing calculator for FractPath.
+
+Constraints:
+
+This calculator is illustrative only.
+
+It must not resemble a loan calculator.
+
+It must not show investment returns or yields.
+
+All outputs must be labeled “Estimated” or “Illustrative.”
+
+Inputs:
+
+Property value
+
+Upfront contribution
+
+Monthly contribution
+
+Horizon (years)
+
+Outputs:
+
+Estimated equity split
+
+Estimated value over time
+
+Early / standard / late exit comparison
+
+Design:
+
+Minimal
+
+Modern
+
+shadcn/ui + Tailwind
+
+Dark mode
+
+Cyan accent
+
+You must not add backend logic, persistence, or authentication.
+Ask clarifying questions only if absolutely necessary.
+
+B) Math logic prompt (explicit but simplified)
+
+Create:
+
+docs/marketing/agent-prompts/calculator-math.md
+
+
+Agent instructions:
+
+Use simple proportional math
+
+Assume linear accumulation of equity
+
+Apply:
+
+Floor protection (minimum outcome)
+
+Ceiling cap (maximum outcome)
+
+Timing factor modifies payout, not FMV
+
+Clearly annotate where floors/ceilings apply
+
+Required labels:
+
+“Floor protection applied”
+
+“Ceiling cap applied”
+
+“Timing affects payout, not home value”
+
+C) Visualization prompt
+
+Create:
+
+docs/marketing/agent-prompts/calculator-visuals.md
+
+
+Agent instructions:
+
+Use lightweight chart library (Recharts or equivalent)
+
+Ensure:
+
+Readability on mobile
+
+Tooltips explain terms in plain language
+
+No financial jargon
+
+D) Persona framing prompt
+
+Create:
+
+docs/marketing/agent-prompts/calculator-personas.md
+
+
+Agent instructions:
+
+Toggle persona labels only
+
+Swap explanatory text
+
+Keep math identical
+
+Never change outputs per persona
+
+E) Gating + CTA prompt
+
+Create:
+
+docs/marketing/agent-prompts/calculator-gating.md
+
+
+Agent instructions:
+
+Require email to reveal full outputs
+
+Capture persona + summary values
+
+CTA after reveal:
+
+“Build and negotiate these terms inside the app”
+
+Link to:
+https://app.fractpath.com/signup
+
+Guardrails (repeat in every prompt)
+
+Agents must not:
+
+Mention ROI or returns
+
+Mention interest rates
+
+Use loan terminology
+
+Suggest guarantees
+
+Add backend logic
+
+Violation = discard output.
+
+Acceptance Criteria (Definition of Done)
+
+Calculator math aligns with term concepts
+
+Visuals are clean and professional
+
+Personas are clearly addressed
+
+Legal posture is preserved
+
+Calculator can be built entirely via agent prompts
+
+Output is demo-safe for investors and partners
+
+Deliverables
+
+Create:
+
+docs/marketing/agent-prompts/
+├─ calculator-master.md
+├─ calculator-math.md
+├─ calculator-visuals.md
+├─ calculator-personas.md
+└─ calculator-gating.md

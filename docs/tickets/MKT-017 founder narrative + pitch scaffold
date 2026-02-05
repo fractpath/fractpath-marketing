@@ -1,0 +1,331 @@
+TICKET MKT-017 — Founder narrative + pitch scaffold
+Ticket ID
+
+MKT-017
+
+Title
+
+Founder narrative, pitch scaffold, and repeatable storytelling assets
+
+Objective
+
+Create a single, coherent founder story and a modular pitch scaffold that:
+
+explains FractPath clearly in under 60 seconds
+
+frames the problem in human, not financial, terms
+
+differentiates from loans, HELOCs, and shared-equity incumbents
+
+aligns with your legal posture (facilitator, not lender)
+
+scales from casual intro → partner pitch → investor meeting
+
+This is narrative infrastructure, not a polished deck (yet).
+
+Non-goals
+
+No financial projections
+
+No TAM/SAM/SOM modeling
+
+No hard fundraising ask language
+
+No public-facing manifesto
+
+Core Design Principles
+
+Human first, financial second
+
+Clarity over cleverness
+
+Credible, not hype-driven
+
+Repeatable across audiences
+
+Consistent with product reality
+
+Implementation Requirements
+A) Founder origin story (short + long)
+
+Create:
+
+docs/marketing/founder-narrative.md
+
+
+Include two versions:
+
+1) 30-second version (default)
+
+Structure:
+
+Personal observation
+
+Why current options fail
+
+What FractPath unlocks
+
+Why now
+
+Template:
+
+“I kept seeing homeowners forced into debt just to access their own equity, and buyers locked out of ownership by upfront costs. FractPath lets private parties share equity instead of creating more debt—structured, transparent, and recorded. It’s not a loan; it’s a different path to ownership.”
+
+2) 2-minute version (partner/investor)
+
+Expand with:
+
+Market context
+
+Why incumbents won’t solve this
+
+Why you’re building it now
+
+B) Problem framing (1 slide / 60 seconds)
+
+Create:
+
+docs/marketing/problem-framing.md
+
+
+Key points:
+
+Home equity is illiquid unless you borrow
+
+Buyers face capital barriers even when monthly cash flow exists
+
+Traditional finance forces debt where flexibility is needed
+
+Avoid:
+
+“Banks are evil”
+
+Regulatory antagonism
+
+Tone:
+
+Calm, structural, inevitable
+
+C) Solution framing (what FractPath actually is)
+
+Create:
+
+docs/marketing/solution-framing.md
+
+
+Explain:
+
+Shared equity, not debt
+
+Private-party agreements
+
+Structured terms + recorded lifecycle
+
+Title-backed security
+
+Platform as facilitator + record keeper
+
+One-liner:
+
+“FractPath turns home equity into a structured, shareable asset—without creating debt.”
+
+D) Differentiation scaffold (vs alternatives)
+
+Create:
+
+docs/marketing/differentiation.md
+
+
+Compare against:
+
+HELOCs / cash-out refis
+
+Home equity investment companies
+
+Rent-to-own
+
+Fractional rental investing
+
+Dimensions:
+
+Debt vs equity
+
+Control
+
+Flexibility
+
+Transparency
+
+Alignment of incentives
+
+E) Why now (timing narrative)
+
+Create:
+
+docs/marketing/why-now.md
+
+
+Cover:
+
+Rate environment
+
+Housing affordability
+
+Consumer discomfort with leverage
+
+Technology enabling structured private agreements
+
+Regulatory pressure on traditional products
+
+Avoid:
+
+Macro doom language
+
+F) Business model explanation (clean + legal-safe)
+
+Create:
+
+docs/marketing/business-model.md
+
+
+Explain:
+
+Platform fees
+
+Exit fees
+
+Realtor referrals
+
+Optional services
+
+Be explicit:
+
+No interest
+
+No APR
+
+No spread lending
+
+G) Traction & proof (beta-friendly)
+
+Create:
+
+docs/marketing/traction-proof.md
+
+
+What counts as traction:
+
+Scenarios modeled
+
+Deals initiated
+
+Title partner interest
+
+Beta users onboarded
+
+Case studies in progress
+
+Use phrases like:
+
+“Early signals”
+
+“Beta learnings”
+
+“Proof of demand”
+
+H) Pitch scaffold (modular outline)
+
+Create:
+
+docs/marketing/pitch-scaffold.md
+
+
+Sections (each optional):
+
+Opening (problem)
+
+Personal story
+
+Solution
+
+How it works
+
+Why it’s different
+
+Why now
+
+Early traction
+
+Where this goes
+
+Ask (if appropriate)
+
+This lets you tailor to:
+
+investor
+
+title partner
+
+realtor
+
+advisor
+
+I) Objection handling (pre-written)
+
+Create:
+
+docs/marketing/objections.md
+
+
+Include responses to:
+
+“Isn’t this just a loan?”
+
+“Is this regulated?”
+
+“Why wouldn’t Zillow do this?”
+
+“What happens if prices fall?”
+
+“Why would a buyer accept illiquidity?”
+
+Answers should be:
+
+calm
+
+factual
+
+aligned with product truth
+
+Acceptance Criteria (Definition of Done)
+
+Founder story exists (short + long)
+
+Problem and solution clearly framed
+
+Differentiation documented
+
+Business model explained safely
+
+Pitch scaffold reusable
+
+Objection responses ready
+
+Language aligns with legal posture
+
+No promises of returns
+
+Deliverables
+
+Create:
+
+docs/marketing/
+├─ founder-narrative.md
+├─ problem-framing.md
+├─ solution-framing.md
+├─ differentiation.md
+├─ why-now.md
+├─ business-model.md
+├─ traction-proof.md
+├─ pitch-scaffold.md
+└─ objections.md

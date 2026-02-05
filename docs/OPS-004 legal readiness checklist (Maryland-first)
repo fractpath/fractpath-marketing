@@ -1,0 +1,346 @@
+TICKET OPS-004 — Legal readiness checklist (Maryland-first)
+Ticket ID
+
+OPS-004
+
+Title
+
+Legal readiness checklist: Maryland-first launch with national scale guardrails
+
+Objective
+
+Create a clear, defensible legal posture for FractPath’s MVP that:
+
+supports Maryland-first operations
+
+avoids triggering lender/broker licensing unintentionally
+
+aligns product language, workflows, and contracts with stated positioning
+
+prepares you to onboard a title partner (e.g., Eagle Title of Annapolis)
+
+establishes a repeatable path to multi-state expansion
+
+This ticket is process + documentation, not code.
+
+Non-goals
+
+No full 50-state legal analysis
+
+No SEC/FINRA registration strategy
+
+No bespoke contract drafting engine
+
+No escrow trust account setup
+
+No legal advice substitution (attorney still required)
+
+Preconditions
+
+OPS-001, OPS-003 complete
+
+APP-001 → APP-013 planned or implemented
+
+Maryland is the initial operating state
+
+FractPath positioned as facilitator / record keeper, not lender
+
+Core Legal Positioning (anchor)
+
+FractPath facilitates and records shared-equity agreements between private parties.
+FractPath does not:
+
+extend credit
+
+set interest rates
+
+underwrite borrowers
+
+provide legal advice
+
+act as a title company or escrow agent
+
+Every checklist item below reinforces this.
+
+Implementation Requirements
+A) Entity & authority check (Maryland)
+
+Create:
+
+docs/ops/legal/entity-and-authority.md
+
+
+Checklist:
+
+ FractPath entity is properly registered (MD)
+
+ Operating agreement reflects facilitation/record-keeping role
+
+ Website footer includes legal entity name + state
+
+ Terms of Service name FractPath as platform provider only
+
+Outcome: You can answer “Who are you legally?” cleanly.
+
+B) Licensing risk review (what you are not)
+
+Create:
+
+docs/ops/legal/licensing-risk-matrix.md
+
+
+Table with columns:
+
+Activity
+
+Could this trigger a license?
+
+FractPath behavior
+
+Mitigation
+
+Cover at least:
+
+Lending / credit extension
+
+Mortgage brokerage
+
+Investment advisory
+
+Real estate brokerage
+
+Escrow / settlement services
+
+Example:
+
+Mortgage lending → risk if interest charged
+
+FractPath behavior: equity transfer, no interest, no repayment schedule
+
+Mitigation: avoid “loan” language everywhere
+
+Outcome: Clear internal guardrails.
+
+C) Contract role clarity (who does what)
+
+Create:
+
+docs/ops/legal/role-clarity.md
+
+
+Explicitly define:
+
+Homeowner
+
+Buyer (utilizer)
+
+Realtor (referrer/co-pilot)
+
+Title company
+
+FractPath
+
+Include:
+
+What FractPath does
+
+What FractPath does not do
+
+Who owns each legal step (title search, lien recording, closing)
+
+This document is what you show:
+
+title partners
+
+skeptical attorneys
+
+early investors
+
+D) Required disclaimers inventory
+
+Create:
+
+docs/ops/legal/disclaimers.md
+
+
+List exact locations where disclaimers must appear:
+
+Marketing calculator outputs
+
+Scenario pages
+
+Negotiation UI
+
+Contract packets
+
+Emails referencing terms
+
+Standard language blocks:
+
+“Illustrative, non-binding”
+
+“Not legal or financial advice”
+
+“Final terms governed by executed agreement”
+
+“Valuation estimates only”
+
+Outcome: No accidental promises.
+
+E) Maryland title + lien flow (MVP)
+
+Create:
+
+docs/ops/legal/maryland-title-flow.md
+
+
+Document:
+
+When title partner is engaged
+
+Who orders title search
+
+How lien is recorded
+
+How payoff waterfall is enforced at exit
+
+Include:
+
+Where FractPath hands off
+
+Where FractPath steps back
+
+This is critical for Eagle Title conversations.
+
+F) Realtor compliance posture (Maryland)
+
+Create:
+
+docs/ops/legal/realtor-compliance.md
+
+
+Clarify:
+
+Realtors are referrers/co-pilots
+
+No pricing advice or underwriting
+
+Commission structure is disclosed
+
+Realtor dashboard is informational
+
+Add:
+
+How you’ll avoid “brokerage of financing” issues
+
+How referral fees are framed
+
+G) Payments & fee compliance sanity check
+
+Create:
+
+docs/ops/legal/fees-and-payments.md
+
+
+Cover:
+
+Platform fees (what they are for)
+
+Exit fee (fee at payout, not interest)
+
+Realtor commissions
+
+Partner fees
+
+Explicitly state:
+
+No interest
+
+No APR
+
+No amortization schedule
+
+H) Expansion readiness checklist (non-MD)
+
+Create:
+
+docs/ops/legal/expansion-checklist.md
+
+
+Before entering a new state:
+
+ Confirm shared-equity treatment
+
+ Confirm title recording differences
+
+ Update disclaimers if needed
+
+ Identify local title partner
+
+ Validate referral fee permissibility
+
+This avoids “oops” expansion.
+
+I) Attorney engagement brief (fast + cheap)
+
+Create:
+
+docs/ops/legal/attorney-brief.md
+
+
+One-page summary you send to a Maryland attorney:
+
+What FractPath does
+
+What it does not do
+
+Sample term sheet
+
+Sample contract packet
+
+Specific questions you want answered
+
+Goal: 2–3 hour review, not months of billable time.
+
+Acceptance Criteria (Definition of Done)
+
+Legal posture documents exist and are consistent
+
+Product language aligns with legal positioning
+
+You can explain FractPath to a title attorney confidently
+
+You can answer licensing questions without hesitation
+
+Maryland launch risks are understood and mitigated
+
+Expansion path is documented (even if not executed)
+
+QA Checklist (self-test)
+
+ Can I explain this to Eagle Title in 10 minutes?
+
+ Does anything look like a loan?
+
+ Does anything look like investment advice?
+
+ Are fees clearly platform/service-based?
+
+ Are final legal steps owned by partners, not FractPath?
+
+If yes → you are legally MVP-ready.
+
+Deliverables
+
+Create the following files:
+
+docs/ops/legal/
+├─ entity-and-authority.md
+├─ licensing-risk-matrix.md
+├─ role-clarity.md
+├─ disclaimers.md
+├─ maryland-title-flow.md
+├─ realtor-compliance.md
+├─ fees-and-payments.md
+├─ expansion-checklist.md
+└─ attorney-brief.md

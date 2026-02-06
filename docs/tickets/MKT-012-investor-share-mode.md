@@ -1,4 +1,8 @@
-TICKET MKT-012 — Investor “read-only” share mode (no email gate)
+**Status: MOVED → fractpath-calculator-widget (WGT-020)**
+
+---
+
+TICKET MKT-012 — Investor "read-only" share mode (no email gate)
 Ticket ID
 
 MKT-012
@@ -6,6 +10,16 @@ MKT-012
 Title
 
 Investor share mode (read-only, ungated, credibility-first)
+
+## Notes
+
+This ticket has been fully moved to the `fractpath-calculator-widget` repository.
+
+- **WGT-020** covers the `?mode=share` bypass of email gating, inline badge, and share-mode CTA behavior within the widget.
+- Marketing will integrate the widget's share mode via query param forwarding in the wrapper component (Batch MKT-C).
+- **Source of truth:** Marketing must not contain calculator math. Widget is canonical. See `docs/migration/calculator-widget.md`.
+
+---
 
 Objective
 
@@ -21,7 +35,7 @@ does not create compliance risk or overpromise
 
 still tracks engagement via Plausible events
 
-This enables quick sharing in outreach messages and decks without “please enter your email” friction.
+This enables quick sharing in outreach messages and decks without "please enter your email" friction.
 
 Non-goals
 
@@ -72,17 +86,17 @@ Email gate UI is hidden entirely
 
 Show a small inline badge above calculator:
 
-“Share Mode” (subtle)
+"Share Mode" (subtle)
 
 Add a short note below outputs:
 
-“This is an illustrative scenario. Create a secure profile to save scenarios and adjust advanced parameters.”
+"This is an illustrative scenario. Create a secure profile to save scenarios and adjust advanced parameters."
 
 CTA after outputs:
 
-Primary: “Create secure profile” → https://app.fractpath.com/signup?persona={persona}
+Primary: "Create secure profile" → https://app.fractpath.com/signup?persona={persona}
 
-Secondary: “Back to standard mode” → link to / (no query params)
+Secondary: "Back to standard mode" → link to / (no query params)
 
 C) HubSpot submission rules in share mode
 
@@ -92,7 +106,7 @@ Do not submit anything to HubSpot
 
 Do not ask for email
 
-You may still provide an optional “Get updates” link in footer or contact section, but it should not interrupt the calculator experience.
+You may still provide an optional "Get updates" link in footer or contact section, but it should not interrupt the calculator experience.
 
 D) Tracking (Plausible)
 

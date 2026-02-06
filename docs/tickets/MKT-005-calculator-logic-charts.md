@@ -1,3 +1,7 @@
+**Status: MOVED → fractpath-calculator-widget (WGT-010 + WGT-011)**
+
+---
+
 TICKET MKT-005 — Calculator logic + charts (persona-tailored)
 Ticket ID
 
@@ -7,11 +11,21 @@ Title
 
 Calculator logic engine + real visualizations (persona-tailored outputs)
 
+## Notes
+
+This ticket has been fully moved to the `fractpath-calculator-widget` repository.
+
+- **WGT-010** covers the deterministic math engine (`computeScenario`, equity vesting schedule, settlement scenarios, floor/cap/TF logic).
+- **WGT-011** covers chart series generation and Recharts visualization.
+- **Source of truth:** Marketing must not contain calculator math. Widget is canonical. See `docs/migration/calculator-widget.md`.
+
+---
+
 Objective
 
 Implement the deterministic FractPath scenario math and produce compelling, persona-specific outputs and a data visualization that clearly communicates the value proposition.
 
-This ticket upgrades the calculator from “UI shell” to a credible scenario model:
+This ticket upgrades the calculator from "UI shell" to a credible scenario model:
 
 computes equity vesting over time (upfront + installments)
 
@@ -137,7 +151,7 @@ servicingFeeMonthly (default 0)
 
 exitFeePct (default 0)
 
-Note: If you haven’t chosen defaults for TF/FM/CM/CPW, implement sensible placeholders and make them easy to change later (constants at top).
+Note: If you haven't chosen defaults for TF/FM/CM/CPW, implement sensible placeholders and make them easy to change later (constants at top).
 
 C) Time series schedule (equity vesting)
 
@@ -222,13 +236,13 @@ Buyer persona outputs
 
 Earned equity % at horizon
 
-“Implied purchase price” concept:
+"Implied purchase price" concept:
 
-Buyer’s implied purchase price per 1% equity at settlement:
+Buyer's implied purchase price per 1% equity at settlement:
 
 implied_price_per_pct = IBA_paid_to_date / (VestedEquity_total*100)
 
-Or show: “Paid X to control Y% of a home worth Z”
+Or show: "Paid X to control Y% of a home worth Z"
 
 Settlement payout (ISA) and gain above capital:
 
@@ -240,7 +254,7 @@ roi_simple = (ISA / IBA)^(1/years)-1 (only if IBA>0)
 
 Homeowner persona outputs
 
-Homeowner perspective should show “what you keep” and liquidity.
+Homeowner perspective should show "what you keep" and liquidity.
 
 Add:
 
@@ -252,7 +266,7 @@ Net proceeds framing (simplified, no senior debt modeling):
 
 homeowner_net_sale_proceeds = FMV_settlement*(1 - VestedEquity_total) - closing_costs_placeholder
 
-If you don’t want closing costs yet, show it as “before closing costs”
+If you don't want closing costs yet, show it as "before closing costs"
 
 Buyback incentive clarity:
 
@@ -270,7 +284,7 @@ Since platform fees may be 0 right now on marketing, still show:
 flat referral (input)
 
 projected total commissions (if exit fee pct used)
-Keep it conservative and clearly labeled “example schedule”.
+Keep it conservative and clearly labeled "example schedule".
 
 F) Visualization requirements (must exist)
 
@@ -321,11 +335,11 @@ persona hero metric values
 
 deal_summary_text should be a short sentence per persona:
 
-buyer: “Paid $X to earn ~Y% equity; projected payout $Z at year N.”
+buyer: "Paid $X to earn ~Y% equity; projected payout $Z at year N."
 
-homeowner: “Received $X; retained ~R% equity; projected buyback $Z at year N.”
+homeowner: "Received $X; retained ~R% equity; projected buyback $Z at year N."
 
-realtor: “Projected commission ~$C across referral + schedule.”
+realtor: "Projected commission ~$C across referral + schedule."
 
 No claims of guaranteed outcomes.
 
@@ -361,7 +375,7 @@ QA Checklist
 
  If both=0, show warning and outputs remain neutral/zero
 
- Currency formatting doesn’t corrupt stored values
+ Currency formatting doesn't corrupt stored values
 
  Equity % never exceeds 100% (clamp if necessary)
 

@@ -1,0 +1,84 @@
+Replit Agent Prompt — fractpath-marketing (Batch MKT-A: migration docs + ticket hygiene)
+
+You are my engineering agent for the fractpath-marketing repo.
+
+Goal (SAFE BATCH MKT-A)
+
+Do ticket hygiene + migration documentation only so the widget repo is the declared calculator source of truth.
+No runtime code changes.
+
+Hard constraints
+
+Do NOT implement or modify any calculator logic in marketing.
+
+Do NOT embed the widget yet.
+
+Do NOT touch /api/lead yet (that’s MKT-B).
+
+Only edit markdown/docs/tickets (and optionally a single README line).
+
+Tasks
+
+Create a migration doc:
+
+File: docs/migration/calculator-widget.md
+
+Content must include:
+
+Boundary: widget repo owns deterministic math, chart series, calc UI, gating; marketing owns page copy, /api/lead HubSpot upsert, analytics wiring, wrapper parsing of query params.
+
+Source of truth statement: “Marketing must not contain calculator math. Widget is canonical.”
+
+Mapping table: MKT → WGT mapping:
+
+MKT-005 → WGT-010 + WGT-011 (moved)
+
+MKT-012 → WGT-020 (moved)
+
+MKT-004 → split: UI/gating in widget (WGT-030/WGT-031); marketing keeps wrapper/layout
+
+MKT-006 → split: widget builds payload (WGT-031); marketing does server route /api/lead
+
+MKT-011 → split: widget emits events; marketing logs them
+
+Implementation plan: short 5–7 bullet steps describing how marketing will embed later (MKT-C), but explicitly “not in this batch”.
+
+Update existing marketing ticket markdown files to reflect status:
+
+For each relevant MKT ticket file, add a top “Status” line:
+
+Status: MOVED → fractpath-calculator-widget (WGT-xxx)
+
+or Status: SPLIT → see WGT-xxx + remaining marketing work
+
+Add a short “Notes” section with the new source of truth and links/refs.
+
+Add a small index note:
+
+Either docs/tickets/README.md or docs/README.md (wherever ticket process is documented)
+
+Add a short “Calculator source of truth: widget repo” paragraph.
+
+Acceptance criteria
+
+ Only docs/tickets markdown changed (no TS/JS/Next runtime code touched)
+
+ Migration doc clearly defines boundaries and ticket mapping
+
+ Tickets updated with MOVED/SPLIT status and references
+
+ Repo passes whatever baseline check exists (if none, at least git status clean after commit)
+
+Process
+
+Create a new branch: mkt-migration-calculator-widget
+
+Implement tasks above
+
+git status -sb and show changed files list
+
+Commit message: docs(migration): declare widget as calculator source of truth
+
+Push branch to origin and stop
+
+Stop after pushing.

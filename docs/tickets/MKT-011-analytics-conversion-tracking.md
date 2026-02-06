@@ -1,3 +1,7 @@
+**Status: SPLIT → widget emits events; marketing logs them**
+
+---
+
 TICKET MKT-011 — Analytics + conversion tracking (privacy-aware)
 Ticket ID
 
@@ -6,6 +10,16 @@ MKT-011
 Title
 
 Analytics + conversion tracking (privacy-aware, investor-friendly)
+
+## Notes
+
+This ticket has been split between the `fractpath-calculator-widget` repo and marketing.
+
+- **Widget** emits standardized analytics events (e.g., `calculator_input_changed`, `calculator_reveal_clicked`, `calculator_used`) via a callback (e.g., `onAnalyticsEvent`).
+- **Marketing retains:** analytics provider setup (Plausible/PostHog), event subscription and logging, privacy controls, and footer privacy note.
+- **Source of truth:** Marketing must not contain calculator math. Widget is canonical. See `docs/migration/calculator-widget.md`.
+
+---
 
 Objective
 
@@ -19,13 +33,13 @@ How many engage the calculator?
 
 How many submit email to unlock results?
 
-How many click “Sign up for beta”?
+How many click "Sign up for beta"?
 
 This must be done in a way that:
 
 is simple to operate as a solo founder
 
-doesn’t add significant engineering complexity
+doesn't add significant engineering complexity
 
 respects privacy expectations for a financial-adjacent product
 
@@ -68,7 +82,7 @@ Cons:
 
 less product analytics depth than PostHog
 
-If you already have PostHog experience, that’s fine too—ticket should be written to support either.
+If you already have PostHog experience, that's fine too—ticket should be written to support either.
 
 Implementation Requirements
 A) Add analytics provider (script)
@@ -131,9 +145,9 @@ Analytics is for funnel behavior only, not the scenario itself (HubSpot stores s
 
 D) Add a lightweight privacy note
 
-Add (or update) a “Privacy” line in the footer:
+Add (or update) a "Privacy" line in the footer:
 
-“We use privacy-friendly analytics to improve the site.”
+"We use privacy-friendly analytics to improve the site."
 
 link placeholder for privacy policy
 
@@ -141,7 +155,7 @@ No legal heavy lifting yet.
 
 E) Verify event fire
 
-Add a temporary dev-mode console log wrapper (removed before merge) or use provider’s live event view.
+Add a temporary dev-mode console log wrapper (removed before merge) or use provider's live event view.
 
 Acceptance Criteria (Definition of Done)
 

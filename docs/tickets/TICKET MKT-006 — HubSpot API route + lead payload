@@ -1,3 +1,7 @@
+**Status: SPLIT → see WGT-031 + remaining marketing work**
+
+---
+
 TICKET MKT-006 — HubSpot API route + lead payload
 Ticket ID
 
@@ -7,15 +11,25 @@ Title
 
 HubSpot lead capture API + CRM property mapping
 
+## Notes
+
+This ticket has been split between the `fractpath-calculator-widget` repo and marketing.
+
+- **WGT-031** covers widget-side payload building: the widget constructs and emits the lead payload object via a callback (e.g., `onLeadPayload`).
+- **Marketing retains:** the `/api/lead` server route (Next.js API route), HubSpot upsert logic, environment variable management, rate limiting, and error handling.
+- **Source of truth:** Marketing must not contain calculator math. Widget is canonical. See `docs/migration/calculator-widget.md`.
+
+---
+
 Objective
 
-Implement a secure server-side endpoint that receives calculator lead submissions and creates/updates a HubSpot contact with a structured “deal summary” payload.
+Implement a secure server-side endpoint that receives calculator lead submissions and creates/updates a HubSpot contact with a structured "deal summary" payload.
 
 This ticket enables marketing automation and ensures every lead is tagged with persona + scenario data in a consistent format.
 
 Non-goals
 
-No email marketing sequences (that’s configured in HubSpot, not code)
+No email marketing sequences (that's configured in HubSpot, not code)
 
 No payments
 
@@ -146,7 +160,7 @@ Never leak token or raw HubSpot error details to client (log server-side only)
 
 D) HubSpot API usage
 
-Use HubSpot public API endpoints (server-side only). Implementation detail up to agent, but requirement is “upsert by email.”
+Use HubSpot public API endpoints (server-side only). Implementation detail up to agent, but requirement is "upsert by email."
 
 Typical approach:
 
@@ -168,7 +182,7 @@ If success:
 
 reveal results
 
-show success toast: “Results unlocked—check your email for next steps.”
+show success toast: "Results unlocked—check your email for next steps."
 
 If error:
 
@@ -178,22 +192,22 @@ show toast with retry option
 
 do not lose input state
 
-Important: If HubSpot is down, user shouldn’t be blocked forever.
+Important: If HubSpot is down, user shouldn't be blocked forever.
 Implement a fallback:
 
-if API fails, allow reveal but show: “We couldn’t save your email—please retry.”
+if API fails, allow reveal but show: "We couldn't save your email—please retry."
 
-(You can choose strict gating, but for marketing conversion it’s better to reveal with warning.)
+(You can choose strict gating, but for marketing conversion it's better to reveal with warning.)
 
 F) Output references to floors/ceilings/TF (per your direction)
 
 When building deal_summary_text and/or outputs JSON, include a short summary line:
 
-“Includes floor of {FM}× capital and cap of {CM}× capital.”
+"Includes floor of {FM}× capital and cap of {CM}× capital."
 
-“Early/Late exit adjusts payout via timing factor (TF).”
+"Early/Late exit adjusts payout via timing factor (TF)."
 
-“Adjust advanced parameters in the app.”
+"Adjust advanced parameters in the app."
 
 This ensures HubSpot records capture the differentiators.
 
@@ -227,9 +241,9 @@ QA Checklist
 
  Confirm JSON strings are not empty and are readable
 
- Confirm deal summary includes floor/cap/TF mention + “adjust in app” teaser
+ Confirm deal summary includes floor/cap/TF mention + "adjust in app" teaser
 
- Confirm dark mode UI doesn’t regress
+ Confirm dark mode UI doesn't regress
 
 Deliverables
 

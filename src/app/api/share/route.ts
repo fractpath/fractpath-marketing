@@ -1,16 +1,31 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
+import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
 /**
  * Marketing Share (mode="marketing")
  * - Marketing owns branded email delivery.
- * - Marketing must treat ShareSummary as an opaque payload and must not infer fields.
- *
- * This route intentionally FAILS CLOSED unless an email provider is configured.
- * (Do not delegate marketing share delivery to the app.)
+ * - Marketing must treat ShareSummary as an opaque payload.
+ * - Email sending happens ONLY if explicitly enabled.
  */
 
 const MARKETING_SHARE_EMAIL_ENABLED =
   (process.env.MARKETING_SHARE_EMAIL_ENABLED || "").toLowerCase() === "true";
+
+const SES_FROM = process.env.SES_FROM || "noreply@fractpath.com";
+
+const ses = MARKETING_SHARE_EMAIL_ENABLED
+  ? new SESClient({
+      region: process.env.AWS_REGION || "us-east-1",
+      credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+      },
+    })
+  : null;
+
+/* ---------------- Rate limiting ---------------- */
 
 const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW = 60_000;
@@ -27,8 +42,11 @@ function isRateLimited(ip: string): boolean {
   return entry.count > RATE_LIMIT_MAX;
 }
 
+/* ---------------- Handler ---------------- */
+
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
+
   if (isRateLimited(ip)) {
     return NextResponse.json(
       { ok: false, error: "Rate limited" },
@@ -55,6 +73,7 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+
   if (summary === undefined) {
     return NextResponse.json(
       { ok: false, error: "Summary required" },
@@ -62,9 +81,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Fail closed until an email provider is configured.
-  // This prevents false positives while keeping contract ownership correct.
-  if (!MARKETING_SHARE_EMAIL_ENABLED) {
+  if (!MARKETING_SHARE_EMAIL_ENABLED || !ses) {
     return NextResponse.json(
       {
         ok: false,
@@ -75,15 +92,35 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Placeholder for real email delivery (Resend/SendGrid/Postmark/etc).
-  // Must treat `summary` as opaque and embed a magic link provided/constructed by marketing contract.
-  console.error(
-    "[share] MARKETING_SHARE_EMAIL_ENABLED=true but no provider configured",
-  );
-  void summary; // explicit: summary is accepted but not inspected
+  try {
+    await ses.send(
+      new SendEmailCommand({
+        Source: SES_FROM,
+        Destination: { ToAddresses: [email] },
+        Message: {
+          Subject: {
+            Data: "Your FractPath Scenario",
+            Charset: "UTF-8",
+          },
+          Body: {
+            Text: {
+              Data:
+                "You were shared a FractPath scenario.\n\n" +
+                "Open the FractPath app to continue.\n\n" +
+                "— FractPath",
+              Charset: "UTF-8",
+            },
+          },
+        },
+      }),
+    );
 
-  return NextResponse.json(
-    { ok: false, error: "Sharing is not configured yet." },
-    { status: 501 },
-  );
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[share] SES send failed", err);
+    return NextResponse.json(
+      { ok: false, error: "Email delivery failed" },
+      { status: 500 },
+    );
+  }
 }

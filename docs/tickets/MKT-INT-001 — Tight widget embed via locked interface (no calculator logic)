@@ -9,14 +9,14 @@ Lock the marketing site to a **tight, contract-driven embed** of the
 
 - All calculator math, persona logic, and computed outputs remain widget-owned
 - Marketing acts strictly as a host and orchestrator
-- No calculator logic or derived math exists in marketing code
+- No calculator logic, derived math, or inferred values exist in marketing code
 
 This ticket exists to prevent silent drift and logic duplication.
 
 ## Context (Locked Decisions)
 - Widget is canonical for calculator math and persona logic.
 - Marketing embeds widget via package import (not iframe, not reimplementation).
-- Marketing may display widget outputs but must not compute or derive them.
+- Marketing may display widget outputs but must not compute, derive, or reinterpret them.
 - Draft tokens and deal creation are app-owned.
 
 ## Embedding Rules (Hard Constraints)
@@ -36,7 +36,8 @@ Marketing code MAY:
 Marketing code must NOT:
 - Reimplement calculator math
 - Derive secondary metrics from widget outputs
-- Interpret or transform DraftSnapshot or ShareSummary fields
+- Recalculate values for analytics or reporting
+- Interpret, transform, or normalize DraftSnapshot or ShareSummary fields
 - Introduce persona logic outside widget configuration
 - Cache or persist calculator outputs independently
 
@@ -44,30 +45,47 @@ Any logic that looks like:
 - “estimated”
 - “calculated”
 - “derived”
-outside the widget is a violation.
+- “normalized”
+outside the widget boundary is a violation.
 
-## Callback Wiring Semantics
+## Callback Wiring Semantics (Opaque Forwarding)
 
-Marketing is responsible for wiring, but not interpreting:
+Marketing is responsible for wiring, but **not interpreting**, widget outputs.
 
 - `onDraftSnapshot(draft: DraftSnapshot)`
-  - Forward to app-owned mint endpoint (`/api/lead`)
   - Gate behind email capture
-- `onShareSummary(summary: ShareSummary)`
-  - Forward to `/api/share` for branded email delivery
+  - Forward **unchanged** to app-owned mint endpoint (`/api/lead`)
 
-Marketing must treat these payloads as **opaque, contract-defined objects**.
+- `onShareSummary(summary: ShareSummary)`
+  - Forward **unchanged** to `/api/share` for branded email delivery
+
+### Opaque Forwarding Rule
+- Payloads must be forwarded **byte-for-byte** (no field additions, removals, renaming, or recomputation).
+- Marketing must treat DraftSnapshot and ShareSummary as opaque, contract-defined objects.
+- Any transformation beyond transport is prohibited.
+
+## Analytics Boundary (Explicit)
+Marketing analytics MAY:
+- Track events such as “calculator_started”, “save_clicked”, “share_clicked”
+
+Marketing analytics must NOT:
+- Recompute or restate widget outputs
+- Store derived financial values
+- Label computed values as marketing-calculated metrics
+
+Analytics may reference widget outputs **only as display strings**, never as computed numbers.
 
 ## Version & Contract Enforcement
-- Marketing must pin to a specific widget version (or version range).
+- Marketing must pin to a specific widget version (or explicit version range).
 - Any widget contract version bump requires:
-  - explicit dependency update
+  - dependency update
   - review against WGT-050 (versioning policy)
+  - confirmation that payload forwarding remains unchanged
 - Marketing must not rely on undocumented widget behavior.
 
 ## Failure Handling
-- If widget fails to load or emit expected callbacks:
-  - marketing must fail closed (no fallback math)
+- If the widget fails to load or emit expected callbacks:
+  - marketing must fail closed (no fallback math or estimates)
   - user must be prompted to retry or contact support
 
 ## Prohibitions (No Silent Mutation)
@@ -75,14 +93,16 @@ Marketing must NOT:
 - Add fields to DraftSnapshot or ShareSummary
 - Remove fields before forwarding
 - Mutate payload contents
-- “Fix” or “normalize” widget outputs
+- “Fix”, coerce, or normalize widget outputs
+- Substitute placeholder or synthetic values
 
-Violations require rollback and contract review.
+Violations require rollback and contract review per OPS-INT-001.
 
 ## Acceptance Criteria
 - Widget is embedded as a single canonical calculator surface.
-- Marketing contains zero calculator math or persona logic.
+- Marketing contains zero calculator math, persona logic, or derived metrics.
 - All widget outputs are forwarded untouched.
+- Analytics boundaries are respected.
 - Behavior aligns with OPS-INT-001 orchestration rules.
 
 ## Dependencies

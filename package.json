@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0 --port 5000",
-    "postinstall": "cd node_modules/fractpath-calculator-widget && npm install @vitejs/plugin-react --no-save --silent 2>/dev/null && npx vite build --silent 2>/dev/null || true",
+    "postinstall": "cd node_modules/fractpath-calculator-widget && npm install @vitejs/plugin-react --no-save && npx vite build",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -12,6 +12,7 @@
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "fractpath-calculator-widget": "github:fractpath/fractpath-calculator-widget#sprint-5-widget-exec",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "next-themes": "^0.4.6",
@@ -19,8 +20,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "sonner": "^2.0.7",
-    "tailwind-merge": "^3.4.0",
-    "fractpath-calculator-widget": "github:fractpath/fractpath-calculator-widget#sprint-5-widget-exec"
+    "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

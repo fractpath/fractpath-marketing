@@ -32,17 +32,20 @@ export default function HomePage() {
             <Badge variant="secondary" className="mb-4">
               Scenario Modeling &middot; Not Financial Advice
             </Badge>
+
             <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
               Debt-Free Equity Access
               <span className="block text-muted-foreground">
                 &amp; a Path to Ownership
               </span>
             </h1>
+
             <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
               Model scenarios for unlocking home equity or building ownership
               &mdash; without traditional debt. All outputs are estimates for
               informational purposes only.
             </p>
+
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Button size="lg" asChild>
                 <a href="#calculator">See Your Options</a>
@@ -55,6 +58,44 @@ export default function HomePage() {
         </Container>
       </Section>
 
+      <Section>
+        <Container>
+          <div className="mx-auto max-w-2xl text-center">
+            <PageHeader
+              eyebrow="Choose Your Perspective"
+              title="Who Are You?"
+              subtitle="Select your role to see tailored scenarios, outputs, and value propositions."
+            />
+          </div>
+
+          <div className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-3">
+            <div className="rounded-2xl border bg-card shadow-sm p-6 text-center">
+              <Home className="mx-auto h-8 w-8 text-primary" />
+              <h3 className="mt-2 font-semibold">Homeowner</h3>
+              <p className="text-xs text-muted-foreground">
+                Access equity without selling
+              </p>
+            </div>
+
+            <div className="rounded-2xl border bg-card shadow-sm p-6 text-center">
+              <Key className="mx-auto h-8 w-8 text-muted-foreground" />
+              <h3 className="mt-2 font-semibold">Buyer</h3>
+              <p className="text-xs text-muted-foreground">
+                Build equity toward ownership
+              </p>
+            </div>
+
+            <div className="rounded-2xl border bg-card shadow-sm p-6 text-center">
+              <Users className="mx-auto h-8 w-8 text-muted-foreground" />
+              <h3 className="mt-2 font-semibold">Realtor</h3>
+              <p className="text-xs text-muted-foreground">
+                Earn commissions on referrals
+              </p>
+            </div>
+          </div>
+        </Container>
+      </Section>
+
       <Section id="calculator" className="bg-muted/30">
         <Container>
           <PageHeader
@@ -62,6 +103,8 @@ export default function HomePage() {
             title="Model Your Path"
             subtitle="Enter property details to see estimated equity scenarios. All outputs are for informational purposes only."
           />
+
+          {/* IMPORTANT: actually render the embedded widget */}
           <CalculatorEmbed />
         </Container>
       </Section>
@@ -150,9 +193,7 @@ export default function HomePage() {
               </p>
             </div>
             <div>
-              <h3 className="mb-2 font-semibold">
-                Is my information safe?
-              </h3>
+              <h3 className="mb-2 font-semibold">Is my information safe?</h3>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 We take data privacy seriously. Scenario inputs are used only to
                 generate your estimates. See our Privacy Policy for full details.
@@ -180,9 +221,7 @@ export default function HomePage() {
               subtitle="Be among the first realtors to offer fractional equity paths to your clients. Early access, priority support, and referral commissions."
             />
             <Button size="lg" asChild>
-              <a href="https://app.fractpath.com/signup">
-                Request Beta Access
-              </a>
+              <a href="https://app.fractpath.com/signup">Request Beta Access</a>
             </Button>
           </div>
         </Container>
@@ -212,6 +251,7 @@ export default function HomePage() {
               body="Every calculation is deterministic and reproducible. No black-box models. You can verify every number."
             />
           </div>
+
           <div className="mt-8 rounded-2xl border bg-muted/50 p-6 text-center">
             <p className="text-xs leading-relaxed text-muted-foreground">
               <strong>Disclaimer:</strong> FractPath provides scenario modeling

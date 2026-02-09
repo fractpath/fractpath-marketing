@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Container,
@@ -9,6 +8,7 @@ import {
   TopNav,
   Footer,
 } from "@/components/ui-kit";
+import { CalculatorEmbed } from "@/components/calculator-embed";
 import {
   Home,
   Key,
@@ -55,47 +55,6 @@ export default function HomePage() {
         </Container>
       </Section>
 
-      <Section>
-        <Container>
-          <div className="mx-auto max-w-2xl text-center">
-            <PageHeader
-              eyebrow="Choose Your Perspective"
-              title="Who Are You?"
-              subtitle="Select your role to see tailored scenarios, outputs, and value propositions."
-            />
-          </div>
-          <div className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-3">
-            <Card className="cursor-pointer rounded-2xl border-2 border-primary shadow-sm transition-shadow hover:shadow-md">
-              <CardContent className="flex flex-col items-center gap-2 p-6 text-center">
-                <Home className="h-8 w-8 text-primary" />
-                <h3 className="font-semibold">Homeowner</h3>
-                <p className="text-xs text-muted-foreground">
-                  Access equity without selling
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="cursor-pointer rounded-2xl shadow-sm transition-shadow hover:shadow-md">
-              <CardContent className="flex flex-col items-center gap-2 p-6 text-center">
-                <Key className="h-8 w-8 text-muted-foreground" />
-                <h3 className="font-semibold">Buyer</h3>
-                <p className="text-xs text-muted-foreground">
-                  Build equity toward ownership
-                </p>
-              </CardContent>
-            </Card>
-            <Card className="cursor-pointer rounded-2xl shadow-sm transition-shadow hover:shadow-md">
-              <CardContent className="flex flex-col items-center gap-2 p-6 text-center">
-                <Users className="h-8 w-8 text-muted-foreground" />
-                <h3 className="font-semibold">Realtor</h3>
-                <p className="text-xs text-muted-foreground">
-                  Earn commissions on referrals
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </Container>
-      </Section>
-
       <Section id="calculator" className="bg-muted/30">
         <Container>
           <PageHeader
@@ -103,19 +62,7 @@ export default function HomePage() {
             title="Model Your Path"
             subtitle="Enter property details to see estimated equity scenarios. All outputs are for informational purposes only."
           />
-          <Card className="mx-auto max-w-2xl rounded-2xl">
-            <CardContent className="flex min-h-[300px] flex-col items-center justify-center gap-4 p-8 text-center">
-              <BarChart3 className="h-12 w-12 text-muted-foreground/50" />
-              <p className="text-lg font-medium text-muted-foreground">
-                Calculator Coming Soon
-              </p>
-              <p className="max-w-md text-sm text-muted-foreground">
-                The interactive equity scenario calculator will be available
-                here. Enter property value, contributions, and time horizon to
-                see personalized estimates.
-              </p>
-            </CardContent>
-          </Card>
+          <CalculatorEmbed />
         </Container>
       </Section>
 

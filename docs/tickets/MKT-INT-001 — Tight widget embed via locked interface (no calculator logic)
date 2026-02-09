@@ -1,0 +1,93 @@
+# MKT-INT-001 — Tight widget embed via locked interface (no calculator logic)
+
+## Sprint
+Sprint 0 (alignment-only) → Sprint 5 (implementation)
+
+## Objective
+Lock the marketing site to a **tight, contract-driven embed** of the
+`fractpath-calculator-widget`, ensuring that:
+
+- All calculator math, persona logic, and computed outputs remain widget-owned
+- Marketing acts strictly as a host and orchestrator
+- No calculator logic or derived math exists in marketing code
+
+This ticket exists to prevent silent drift and logic duplication.
+
+## Context (Locked Decisions)
+- Widget is canonical for calculator math and persona logic.
+- Marketing embeds widget via package import (not iframe, not reimplementation).
+- Marketing may display widget outputs but must not compute or derive them.
+- Draft tokens and deal creation are app-owned.
+
+## Embedding Rules (Hard Constraints)
+
+### Allowed in Marketing
+Marketing code MAY:
+- Import the widget package directly
+- Pass props defined in the locked public interface
+- Render surrounding marketing copy and layout
+- Handle:
+  - email capture
+  - gating UI
+  - routing and redirects
+- Forward widget-emitted callbacks to marketing APIs
+
+### Prohibited in Marketing
+Marketing code must NOT:
+- Reimplement calculator math
+- Derive secondary metrics from widget outputs
+- Interpret or transform DraftSnapshot or ShareSummary fields
+- Introduce persona logic outside widget configuration
+- Cache or persist calculator outputs independently
+
+Any logic that looks like:
+- “estimated”
+- “calculated”
+- “derived”
+outside the widget is a violation.
+
+## Callback Wiring Semantics
+
+Marketing is responsible for wiring, but not interpreting:
+
+- `onDraftSnapshot(draft: DraftSnapshot)`
+  - Forward to app-owned mint endpoint (`/api/lead`)
+  - Gate behind email capture
+- `onShareSummary(summary: ShareSummary)`
+  - Forward to `/api/share` for branded email delivery
+
+Marketing must treat these payloads as **opaque, contract-defined objects**.
+
+## Version & Contract Enforcement
+- Marketing must pin to a specific widget version (or version range).
+- Any widget contract version bump requires:
+  - explicit dependency update
+  - review against WGT-050 (versioning policy)
+- Marketing must not rely on undocumented widget behavior.
+
+## Failure Handling
+- If widget fails to load or emit expected callbacks:
+  - marketing must fail closed (no fallback math)
+  - user must be prompted to retry or contact support
+
+## Prohibitions (No Silent Mutation)
+Marketing must NOT:
+- Add fields to DraftSnapshot or ShareSummary
+- Remove fields before forwarding
+- Mutate payload contents
+- “Fix” or “normalize” widget outputs
+
+Violations require rollback and contract review.
+
+## Acceptance Criteria
+- Widget is embedded as a single canonical calculator surface.
+- Marketing contains zero calculator math or persona logic.
+- All widget outputs are forwarded untouched.
+- Behavior aligns with OPS-INT-001 orchestration rules.
+
+## Dependencies
+- OPS-INT-001 — Multi-repo orchestration + contract enforcement
+- WGT-INT-001 — Widget public interface (locked)
+- WGT-031 — Widget gating semantics
+- WGT-030 — Widget UI surface + mode behavior
+- WGT-020 — Share semantics

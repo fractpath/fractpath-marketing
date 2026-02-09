@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --hostname 0.0.0.0 --port 5000",
+    "postinstall": "cd node_modules/fractpath-calculator-widget && npm install @vitejs/plugin-react --no-save --silent 2>/dev/null && npx vite build --silent 2>/dev/null || true",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

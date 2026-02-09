@@ -14,6 +14,7 @@ allowedOrigins.push("http://0.0.0.0:5000");
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: allowedOrigins,
+  transpilePackages: ["fractpath-calculator-widget"],
 };
 
 export default nextConfig;

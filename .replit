@@ -42,4 +42,9 @@ outputType = "webview"
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
 publicDir = ".next/standalone"
-run = ["npm", "run", "start", "--", "--port", "5000", "--hostname", "0.0.0.0"]
+run = ["npm", "run", "start"]
+
+[userenv]
+
+[userenv.shared]
+FRACTPATH_APP_URL = "https://app.fractpath.com"

@@ -3,7 +3,6 @@
 import { useCallback, useState } from "react";
 import { FractPathCalculatorWidget } from "fractpath-calculator-widget";
 import type {
-  CalculatorPersona,
   DraftSnapshot,
   ShareSummary,
   WidgetEvent,
@@ -26,7 +25,6 @@ type GateState =
   | { step: "share_error"; message: string; summary: ShareSummary; email: string };
 
 export function CalculatorEmbed() {
-  const [persona, setPersona] = useState<CalculatorPersona>("homeowner");
   const [gate, setGate] = useState<GateState>({ step: "idle" });
   const [emailInput, setEmailInput] = useState("");
   const [widgetError, setWidgetError] = useState(false);
@@ -54,7 +52,7 @@ export function CalculatorEmbed() {
       if (!email || !email.includes("@")) return;
 
       setGate({ step: "submitting", draft: gate.draft, email });
-      trackCustomEvent("lead_email_submitted", { persona });
+      trackCustomEvent("lead_email_submitted");
 
       try {
         const res = await fetch("/api/lead", {
@@ -85,7 +83,7 @@ export function CalculatorEmbed() {
         });
       }
     },
-    [gate, emailInput, persona],
+    [gate, emailInput],
   );
 
   const handleShareSubmit = useCallback(
@@ -97,7 +95,7 @@ export function CalculatorEmbed() {
       if (!email || !email.includes("@")) return;
 
       setGate({ step: "share_sending", email });
-      trackCustomEvent("share_email_submitted", { persona });
+      trackCustomEvent("share_email_submitted");
 
       try {
         const res = await fetch("/api/share", {
@@ -127,7 +125,7 @@ export function CalculatorEmbed() {
         });
       }
     },
-    [gate, emailInput, persona],
+    [gate, emailInput],
   );
 
   if (widgetError) {
@@ -151,27 +149,10 @@ export function CalculatorEmbed() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-center gap-2">
-        {(["homeowner", "buyer", "realtor"] as const).map((p) => (
-          <Button
-            key={p}
-            variant={persona === p ? "default" : "outline"}
-            size="sm"
-            onClick={() => {
-              setPersona(p);
-              setGate({ step: "idle" });
-              trackCustomEvent("persona_selected", { persona: p });
-            }}
-          >
-            {p.charAt(0).toUpperCase() + p.slice(1)}
-          </Button>
-        ))}
-      </div>
-
       <div className="mx-auto max-w-[920px]">
         <WidgetErrorBoundary onError={() => setWidgetError(true)}>
           <FractPathCalculatorWidget
-            persona={persona}
+            persona="homeowner"
             mode="marketing"
             onDraftSnapshot={handleDraftSnapshot}
             onShareSummary={handleShareSummary}
@@ -231,7 +212,9 @@ export function CalculatorEmbed() {
         <Card className="mx-auto max-w-md rounded-2xl">
           <CardContent className="flex items-center justify-center gap-3 p-6">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="text-sm text-muted-foreground">Redirecting to FractPath app...</p>
+            <p className="text-sm text-muted-foreground">
+              Redirecting to FractPath app...
+            </p>
           </CardContent>
         </Card>
       )}
@@ -240,13 +223,11 @@ export function CalculatorEmbed() {
         <Card className="mx-auto max-w-md rounded-2xl border-destructive/20">
           <CardContent className="p-6 text-center">
             <p className="text-sm text-destructive">{gate.message}</p>
-            <div className="mt-4 flex gap-2 justify-center">
+            <div className="mt-4 flex justify-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  setGate({ step: "email_gate", draft: gate.draft })
-                }
+                onClick={() => setGate({ step: "email_gate", draft: gate.draft })}
               >
                 Try Again
               </Button>
@@ -304,7 +285,9 @@ export function CalculatorEmbed() {
         <Card className="mx-auto max-w-md rounded-2xl">
           <CardContent className="flex items-center justify-center gap-3 p-6">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="text-sm text-muted-foreground">Sending scenario summary...</p>
+            <p className="text-sm text-muted-foreground">
+              Sending scenario summary...
+            </p>
           </CardContent>
         </Card>
       )}
@@ -331,13 +314,11 @@ export function CalculatorEmbed() {
         <Card className="mx-auto max-w-md rounded-2xl border-destructive/20">
           <CardContent className="p-6 text-center">
             <p className="text-sm text-destructive">{gate.message}</p>
-            <div className="mt-4 flex gap-2 justify-center">
+            <div className="mt-4 flex justify-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  setGate({ step: "share_prompt", summary: gate.summary })
-                }
+                onClick={() => setGate({ step: "share_prompt", summary: gate.summary })}
               >
                 Try Again
               </Button>

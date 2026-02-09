@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const FRACTPATH_APP_URL = process.env.FRACTPATH_APP_URL || "https://app.fractpath.com";
+/**
+ * Marketing Share (mode="marketing")
+ * - Marketing owns branded email delivery.
+ * - Marketing must treat ShareSummary as an opaque payload and must not infer fields.
+ *
+ * This route intentionally FAILS CLOSED unless an email provider is configured.
+ * (Do not delegate marketing share delivery to the app.)
+ */
+
+const MARKETING_SHARE_EMAIL_ENABLED =
+  (process.env.MARKETING_SHARE_EMAIL_ENABLED || "").toLowerCase() === "true";
 
 const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW = 60_000;
@@ -20,39 +30,60 @@ function isRateLimited(ip: string): boolean {
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
   if (isRateLimited(ip)) {
-    return NextResponse.json({ ok: false, error: "Rate limited" }, { status: 429 });
+    return NextResponse.json(
+      { ok: false, error: "Rate limited" },
+      { status: 429 },
+    );
   }
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Invalid JSON" },
+      { status: 400 },
+    );
   }
 
   const email = typeof body.email === "string" ? body.email.trim() : "";
-  const summary = body.summary as Record<string, unknown> | undefined;
+  const summary = body.summary;
 
   if (!email || !email.includes("@")) {
-    return NextResponse.json({ ok: false, error: "Valid email required" }, { status: 400 });
+    return NextResponse.json(
+      { ok: false, error: "Valid email required" },
+      { status: 400 },
+    );
   }
-  if (!summary || typeof summary !== "object") {
-    return NextResponse.json({ ok: false, error: "Summary required" }, { status: 400 });
+  if (summary === undefined) {
+    return NextResponse.json(
+      { ok: false, error: "Summary required" },
+      { status: 400 },
+    );
   }
 
-  try {
-    const shareRes = await fetch(`${FRACTPATH_APP_URL}/api/share/send`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, summary }),
-    });
-    if (shareRes.ok) {
-      return NextResponse.json({ ok: true });
-    }
-    console.error("[share] app endpoint returned non-ok:", shareRes.status);
-    return NextResponse.json({ ok: false, error: "Unable to send. Please try again." }, { status: 502 });
-  } catch (err) {
-    console.error("[share] send failed:", err);
-    return NextResponse.json({ ok: false, error: "Unable to send. Please try again." }, { status: 502 });
+  // Fail closed until an email provider is configured.
+  // This prevents false positives while keeping contract ownership correct.
+  if (!MARKETING_SHARE_EMAIL_ENABLED) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          "Sharing is not configured yet. Please use Save & Continue to resume in the app.",
+      },
+      { status: 501 },
+    );
   }
+
+  // Placeholder for real email delivery (Resend/SendGrid/Postmark/etc).
+  // Must treat `summary` as opaque and embed a magic link provided/constructed by marketing contract.
+  console.error(
+    "[share] MARKETING_SHARE_EMAIL_ENABLED=true but no provider configured",
+  );
+  void summary; // explicit: summary is accepted but not inspected
+
+  return NextResponse.json(
+    { ok: false, error: "Sharing is not configured yet." },
+    { status: 501 },
+  );
 }

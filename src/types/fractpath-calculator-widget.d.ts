@@ -1,63 +1,17 @@
 declare module "fractpath-calculator-widget" {
   import type { ComponentType } from "react";
 
-  export type CalculatorPersona =
-    | "homeowner"
-    | "buyer"
-    | "realtor"
-    | "investor"
-    | "ops";
-
+  /**
+   * Marketing must treat widget payloads as opaque, contract-defined objects.
+   * Do not reference or derive from fields inside DraftSnapshot / ShareSummary in marketing code.
+   */
+  export type CalculatorPersona = "homeowner" | "buyer" | "realtor";
   export type CalculatorMode = "marketing" | "app";
 
-  export type DraftSnapshotInputs = {
-    homeValue: number;
-    initialBuyAmount: number;
-    termYears: number;
-    annualGrowthRate: number;
-  };
-
-  export type DraftSnapshotBasicResults = {
-    standard_net_payout: number;
-    early_net_payout: number;
-    late_net_payout: number;
-    standard_settlement_month: number;
-    early_settlement_month: number;
-    late_settlement_month: number;
-  };
-
-  export type DraftSnapshot = {
-    contract_version: string;
-    schema_version: string;
-    persona: CalculatorPersona;
-    mode: "marketing";
-    inputs: DraftSnapshotInputs;
-    basic_results: DraftSnapshotBasicResults;
-    input_hash: string;
-    output_hash: string;
-    created_at: string;
-  };
-
-  export type ShareSummaryBasicResults = {
-    standard_net_payout: number;
-    early_net_payout: number;
-    late_net_payout: number;
-  };
-
-  export type ShareSummary = {
-    contract_version: string;
-    schema_version: string;
-    persona: CalculatorPersona;
-    inputs: DraftSnapshotInputs;
-    basic_results: ShareSummaryBasicResults;
-    created_at: string;
-  };
-
-  export type WidgetEvent =
-    | { type: "calculator_used"; persona: CalculatorPersona }
-    | { type: "share_clicked"; persona: CalculatorPersona }
-    | { type: "save_continue_clicked"; persona: CalculatorPersona }
-    | { type: "save_clicked"; persona: CalculatorPersona };
+  // Opaque payloads: prevent schema drift in marketing
+  export type DraftSnapshot = unknown;
+  export type ShareSummary = unknown;
+  export type WidgetEvent = unknown;
 
   export type FractPathCalculatorWidgetProps = {
     persona: CalculatorPersona;
@@ -68,7 +22,4 @@ declare module "fractpath-calculator-widget" {
   };
 
   export const FractPathCalculatorWidget: ComponentType<FractPathCalculatorWidgetProps>;
-
-  export const CONTRACT_VERSION: string;
-  export const SCHEMA_VERSION: string;
 }

@@ -1,256 +1,89 @@
-**Status: SPLIT → see WGT-031 + remaining marketing work**
+**Status: REDEFINED (Sprint 0) → Lead + Draft Token + Share Orchestration**
+**Depends on:** docs/architecture/integration-contract.md (v1.0)
+**Supports:** MKT-004 Save & Continue + Share flows
 
 ---
 
-TICKET MKT-006 — HubSpot API route + lead payload
-Ticket ID
+# TICKET MKT-006 — Lead Capture + Draft Token Orchestration + Share Email
 
+## Ticket ID
 MKT-006
 
-Title
-
-HubSpot lead capture API + CRM property mapping
-
-## Notes
-
-This ticket has been split between the `fractpath-calculator-widget` repo and marketing.
-
-- **WGT-031** covers widget-side payload building: the widget constructs and emits the lead payload object via a callback (e.g., `onLeadPayload`).
-- **Marketing retains:** the `/api/lead` server route (Next.js API route), HubSpot upsert logic, environment variable management, rate limiting, and error handling.
-- **Source of truth:** Marketing must not contain calculator math. Widget is canonical. See `docs/migration/calculator-widget.md`.
+## Title
+Lead capture endpoints (/api/lead, /api/share) + HubSpot upsert (non-blocking) + draft-token minting
 
 ---
 
-Objective
-
-Implement a secure server-side endpoint that receives calculator lead submissions and creates/updates a HubSpot contact with a structured "deal summary" payload.
-
-This ticket enables marketing automation and ensures every lead is tagged with persona + scenario data in a consistent format.
-
-Non-goals
-
-No email marketing sequences (that's configured in HubSpot, not code)
-
-No payments
-
-No secure portal persistence
-
-No PII beyond email (phone is post-MVP / secure portal)
-
-Preconditions
-
-MKT-001..005 complete
-
-Calculator builds a lead payload containing:
-
-email
-
-persona
-
-source
-
-scenario_inputs (raw numeric)
-
-scenario_outputs (computed)
-
-deal_summary_text
-
-Vercel deployment is working
-
-You have a HubSpot Private App access token
-
-Implementation Requirements
-A) Environment variables
-
-Add to .env.example (if not already present):
-
-HUBSPOT_ACCESS_TOKEN=
-HUBSPOT_PORTAL_ID=   # optional, only if needed later
-
-
-In Vercel:
-
-Add HUBSPOT_ACCESS_TOKEN to Project → Settings → Environment Variables
-
-No secrets in the repo.
-
-B) Define HubSpot contact property names (single source of truth)
-
-Create:
-
-src/lib/hubspotProperties.ts
-
-Export an object mapping (string constants) for the HubSpot property keys. This prevents silent mismatches.
-
-Minimum property keys we will send (you may need to create these properties in HubSpot):
-
-email (native)
-
-fp_persona (enum/text)
-
-fp_source (text)
-
-fp_deal_summary (long text)
-
-fp_scenario_inputs_json (long text)
-
-fp_scenario_outputs_json (long text)
-
-fp_last_scenario_at (datetime)
-
-Optional (nice for reporting):
-
-fp_property_value
-
-fp_upfront
-
-fp_monthly
-
-fp_horizon_years
-
-Requirement: JSON fields must be stringified and reasonably sized.
-
-C) API route
-
-Create Next.js route:
-
-src/app/api/lead/route.ts
-
-Requirements:
-
-Accept POST JSON body matching your lead payload shape
-
-Validate:
-
-email present and contains @
-
-persona in allowed set
-
-scenario_inputs exists
-
-Rate limit (lightweight):
-
-If feasible quickly: basic IP-based in-memory throttle (best effort)
-
-Otherwise: implement conservative rejection on obviously abusive payloads
-
-Sanitize:
-
-trim strings
-
-limit deal_summary_text length (e.g., 500–1000 chars)
-
-HubSpot behavior:
-
-Upsert contact by email:
-
-If contact exists → update properties
-
-If not → create contact
-
-Always update fp_last_scenario_at
-
-Error handling:
-
-Return { ok: true } on success
-
-Return { ok: false, error: "…" } on failure with safe message
-
-Never leak token or raw HubSpot error details to client (log server-side only)
-
-D) HubSpot API usage
-
-Use HubSpot public API endpoints (server-side only). Implementation detail up to agent, but requirement is "upsert by email."
-
-Typical approach:
-
-Search contact by email
-
-If found → update by contact ID
-
-Else → create
-
-E) Front-end integration
-
-Update calculator submission flow so that after email is entered:
-
-Build payload using buildLeadPayload(...)
-
-POST to /api/lead
-
-If success:
-
-reveal results
-
-show success toast: "Results unlocked—check your email for next steps."
-
-If error:
-
-keep outputs blurred
-
-show toast with retry option
-
-do not lose input state
-
-Important: If HubSpot is down, user shouldn't be blocked forever.
-Implement a fallback:
-
-if API fails, allow reveal but show: "We couldn't save your email—please retry."
-
-(You can choose strict gating, but for marketing conversion it's better to reveal with warning.)
-
-F) Output references to floors/ceilings/TF (per your direction)
-
-When building deal_summary_text and/or outputs JSON, include a short summary line:
-
-"Includes floor of {FM}× capital and cap of {CM}× capital."
-
-"Early/Late exit adjusts payout via timing factor (TF)."
-
-"Adjust advanced parameters in the app."
-
-This ensures HubSpot records capture the differentiators.
-
-Acceptance Criteria (Definition of Done)
-
-Submitting email triggers POST to /api/lead
-
-HubSpot contact is created/updated with:
-
-persona
-
-deal summary
-
-inputs json
-
-outputs json
-
-Front-end shows success state and reveals results
-
-Errors are handled gracefully without losing state
-
-No secrets are committed
-
-Vercel deploy succeeds
-
-QA Checklist
-
- Test with 2 personas; confirm HubSpot properties update
-
- Submit twice with same email; confirm it updates rather than duplicates
-
- Confirm JSON strings are not empty and are readable
-
- Confirm deal summary includes floor/cap/TF mention + "adjust in app" teaser
-
- Confirm dark mode UI doesn't regress
-
-Deliverables
-
-/api/lead route
-
-hubspot property mapping module
-
-calculator submission calls the API and handles success/failure
-
-Vercel env var documented in README or docs note
+## Notes / Scope Split
+
+This ticket defines **marketing backend orchestration** only. The widget is canonical for computation.
+
+- **Widget (fractpath-calculator-widget) owns:**
+  - Producing `DraftSnapshot` via `onDraft(draftSnapshot)`
+  - Producing `ShareSummary` via `onShare(shareSummary)`
+  - No network calls and no persistence
+
+- **Marketing (fractpath-marketing) owns:**
+  - `/api/lead` endpoint: email capture + handoff to app-owned draft token
+  - `/api/share` endpoint: marketing-share email + magic link token
+  - Optional HubSpot upsert (server-side only) as a *best-effort* side effect
+  - Env vars / secret management
+  - Rate limiting and safe error handling
+
+**Source of truth:** Marketing must not contain calculator math. Widget is canonical.  
+See `docs/architecture/integration-contract.md` and `docs/migration/calculator-widget.md`.
+
+---
+
+## Objective
+
+Implement secure server-side endpoints to:
+1) Accept prospect “Save & Continue” submissions and return an opaque `resume_token` for app handoff.
+2) Support marketing share: email a branded proto-deal summary + magic link to a preconfigured marketing view.
+3) Optionally upsert HubSpot contact properties for CRM tracking, without blocking the user funnel.
+
+This ticket powers the Sprint 5 bridge: marketing → app resume → saved deal.
+
+---
+
+## Non-goals
+
+- No calculator math or chart logic in marketing.
+- No “reveal results” gating UX in marketing (handled by MKT-004 UI and widget behavior).
+- No real deal creation in marketing (draft tokens only).
+- No auth changes in app (handled in APP-INT-001).
+- No email marketing sequences (HubSpot workflows configured in HubSpot).
+- No PII beyond email.
+
+---
+
+## Preconditions
+
+- Marketing page (MKT-004) can supply:
+  - `email`
+  - `persona`
+  - latest `draftSnapshot` from widget `onDraft`
+  - `shareSummary` from widget `onShare` (for share)
+- App provides a server endpoint to mint draft tokens (to be implemented in APP-INT-001 or as a stub for Sprint 0):
+  - `POST https://app.fractpath.com/api/drafts`
+  - returns `{ resume_token }`
+
+---
+
+## Data Shapes (must align to integration-contract.md)
+
+### DraftSnapshot (proto-deal)
+- persona
+- minimal inputs
+- basic outputs
+- no IDs
+- safe to serialize
+
+### LeadSubmission
+```ts
+{
+  email: string;
+  persona: "homeowner" | "buyer" | "realtor";
+  source: "marketing_calculator";
+  draftSnapshot: DraftSnapshot;
+}

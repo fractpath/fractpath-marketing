@@ -3,8 +3,7 @@
 import { useCallback, useState } from "react";
 import { FractPathCalculatorWidget } from "fractpath-calculator-widget";
 import type {
-  DraftSnapshot,
-  ShareSummary,
+  LiteShareSummaryV1,
   WidgetEvent,
 } from "fractpath-calculator-widget";
 import { Button } from "@/components/ui/button";
@@ -15,28 +14,20 @@ import { trackEvent, trackCustomEvent } from "@/lib/analytics";
 
 type GateState =
   | { step: "idle" }
-  | { step: "email_gate"; draft: DraftSnapshot }
-  | { step: "submitting"; draft: DraftSnapshot; email: string }
-  | { step: "redirecting" }
-  | { step: "error"; message: string; draft: DraftSnapshot; email: string }
-  | { step: "share_sending"; email: string }
-  | { step: "share_prompt"; summary: ShareSummary }
-  | { step: "share_sent" }
-  | { step: "share_error"; message: string; summary: ShareSummary; email: string };
+  | { step: "email_gate"; snapshot: LiteShareSummaryV1 }
+  | { step: "submitting"; snapshot: LiteShareSummaryV1; email: string }
+  | { step: "saved" }
+  | { step: "error"; message: string; snapshot: LiteShareSummaryV1; email: string };
 
 export function CalculatorEmbed() {
   const [gate, setGate] = useState<GateState>({ step: "idle" });
   const [emailInput, setEmailInput] = useState("");
   const [widgetError, setWidgetError] = useState(false);
 
-  const handleDraftSnapshot = useCallback((draft: DraftSnapshot) => {
-    setGate({ step: "email_gate", draft });
+  const handleLiteSnapshot = useCallback((lite: LiteShareSummaryV1) => {
+    setGate({ step: "email_gate", snapshot: lite });
     setEmailInput("");
-  }, []);
-
-  const handleShareSummary = useCallback((summary: ShareSummary) => {
-    setGate({ step: "share_prompt", summary });
-    setEmailInput("");
+    trackCustomEvent("lite_snapshot_received");
   }, []);
 
   const handleEvent = useCallback((event: WidgetEvent) => {
@@ -51,26 +42,25 @@ export function CalculatorEmbed() {
       const email = emailInput.trim();
       if (!email || !email.includes("@")) return;
 
-      setGate({ step: "submitting", draft: gate.draft, email });
+      setGate({ step: "submitting", snapshot: gate.snapshot, email });
       trackCustomEvent("lead_email_submitted");
 
       try {
         const res = await fetch("/api/lead", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, snapshot: gate.draft }),
+          body: JSON.stringify({ email, snapshot: gate.snapshot }),
         });
 
         const data = await res.json();
 
-        if (data.ok && data.resumeUrl) {
-          setGate({ step: "redirecting" });
-          window.location.href = data.resumeUrl;
+        if (data.ok) {
+          setGate({ step: "saved" });
         } else {
           setGate({
             step: "error",
             message: data.error || "Something went wrong. Please try again.",
-            draft: gate.draft,
+            snapshot: gate.snapshot,
             email,
           });
         }
@@ -78,49 +68,7 @@ export function CalculatorEmbed() {
         setGate({
           step: "error",
           message: "Network error. Please check your connection and try again.",
-          draft: gate.draft,
-          email: emailInput.trim(),
-        });
-      }
-    },
-    [gate, emailInput],
-  );
-
-  const handleShareSubmit = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (gate.step !== "share_prompt") return;
-
-      const email = emailInput.trim();
-      if (!email || !email.includes("@")) return;
-
-      setGate({ step: "share_sending", email });
-      trackCustomEvent("share_email_submitted");
-
-      try {
-        const res = await fetch("/api/share", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, summary: gate.summary }),
-        });
-
-        const data = await res.json();
-
-        if (data.ok) {
-          setGate({ step: "share_sent" });
-        } else {
-          setGate({
-            step: "share_error",
-            message: data.error || "Unable to send. Please try again.",
-            summary: gate.summary,
-            email,
-          });
-        }
-      } catch {
-        setGate({
-          step: "share_error",
-          message: "Network error. Please try again.",
-          summary: gate.summary,
+          snapshot: gate.snapshot,
           email: emailInput.trim(),
         });
       }
@@ -152,10 +100,8 @@ export function CalculatorEmbed() {
       <div className="mx-auto max-w-[920px]">
         <WidgetErrorBoundary onError={() => setWidgetError(true)}>
           <FractPathCalculatorWidget
-            persona="homeowner"
             mode="marketing"
-            onDraftSnapshot={handleDraftSnapshot}
-            onShareSummary={handleShareSummary}
+            onLiteSnapshot={handleLiteSnapshot}
             onEvent={handleEvent}
           />
         </WidgetErrorBoundary>
@@ -166,9 +112,9 @@ export function CalculatorEmbed() {
           <CardContent className="p-6">
             <form onSubmit={handleEmailSubmit} className="space-y-4">
               <div className="text-center">
-                <h3 className="text-lg font-semibold">Save &amp; Continue</h3>
+                <h3 className="text-lg font-semibold">Save Your Scenario</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Enter your email to save this scenario and continue in the app.
+                  Enter your email to save this scenario and receive a summary.
                 </p>
               </div>
               <div className="space-y-2">
@@ -208,95 +154,11 @@ export function CalculatorEmbed() {
         </Card>
       )}
 
-      {gate.step === "redirecting" && (
-        <Card className="mx-auto max-w-md rounded-2xl">
-          <CardContent className="flex items-center justify-center gap-3 p-6">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="text-sm text-muted-foreground">
-              Redirecting to FractPath app...
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {gate.step === "error" && (
-        <Card className="mx-auto max-w-md rounded-2xl border-destructive/20">
-          <CardContent className="p-6 text-center">
-            <p className="text-sm text-destructive">{gate.message}</p>
-            <div className="mt-4 flex justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setGate({ step: "email_gate", draft: gate.draft })}
-              >
-                Try Again
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setGate({ step: "idle" })}
-              >
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {gate.step === "share_prompt" && (
-        <Card className="mx-auto max-w-md rounded-2xl border-primary/20 shadow-md">
-          <CardContent className="p-6">
-            <form onSubmit={handleShareSubmit} className="space-y-4">
-              <div className="text-center">
-                <h3 className="text-lg font-semibold">Share This Scenario</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Enter an email to send a summary of this scenario.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="share-email">Recipient Email</Label>
-                <Input
-                  id="share-email"
-                  type="email"
-                  placeholder="recipient@example.com"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  required
-                  autoFocus
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                Send Summary
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => setGate({ step: "idle" })}
-              >
-                Cancel
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {gate.step === "share_sending" && (
-        <Card className="mx-auto max-w-md rounded-2xl">
-          <CardContent className="flex items-center justify-center gap-3 p-6">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="text-sm text-muted-foreground">
-              Sending scenario summary...
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {gate.step === "share_sent" && (
+      {gate.step === "saved" && (
         <Card className="mx-auto max-w-md rounded-2xl border-green-500/20">
           <CardContent className="p-6 text-center">
-            <p className="text-sm text-green-700 dark:text-green-400">
-              Scenario summary sent successfully.
+            <p className="text-sm font-medium text-green-700 dark:text-green-400">
+              Saved! Check your email for a scenario summary.
             </p>
             <Button
               variant="ghost"
@@ -310,7 +172,7 @@ export function CalculatorEmbed() {
         </Card>
       )}
 
-      {gate.step === "share_error" && (
+      {gate.step === "error" && (
         <Card className="mx-auto max-w-md rounded-2xl border-destructive/20">
           <CardContent className="p-6 text-center">
             <p className="text-sm text-destructive">{gate.message}</p>
@@ -318,7 +180,7 @@ export function CalculatorEmbed() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setGate({ step: "share_prompt", summary: gate.summary })}
+                onClick={() => setGate({ step: "email_gate", snapshot: gate.snapshot })}
               >
                 Try Again
               </Button>

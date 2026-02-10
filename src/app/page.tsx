@@ -58,44 +58,6 @@ export default function HomePage() {
         </Container>
       </Section>
 
-      <Section>
-        <Container>
-          <div className="mx-auto max-w-2xl text-center">
-            <PageHeader
-              eyebrow="Choose Your Perspective"
-              title="Who Are You?"
-              subtitle="Select your role to see tailored scenarios, outputs, and value propositions."
-            />
-          </div>
-
-          <div className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-3">
-            <div className="rounded-2xl border bg-card shadow-sm p-6 text-center">
-              <Home className="mx-auto h-8 w-8 text-primary" />
-              <h3 className="mt-2 font-semibold">Homeowner</h3>
-              <p className="text-xs text-muted-foreground">
-                Access equity without selling
-              </p>
-            </div>
-
-            <div className="rounded-2xl border bg-card shadow-sm p-6 text-center">
-              <Key className="mx-auto h-8 w-8 text-muted-foreground" />
-              <h3 className="mt-2 font-semibold">Buyer</h3>
-              <p className="text-xs text-muted-foreground">
-                Build equity toward ownership
-              </p>
-            </div>
-
-            <div className="rounded-2xl border bg-card shadow-sm p-6 text-center">
-              <Users className="mx-auto h-8 w-8 text-muted-foreground" />
-              <h3 className="mt-2 font-semibold">Realtor</h3>
-              <p className="text-xs text-muted-foreground">
-                Earn commissions on referrals
-              </p>
-            </div>
-          </div>
-        </Container>
-      </Section>
-
       <Section id="calculator" className="bg-muted/30">
         <Container>
           <PageHeader

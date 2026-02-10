@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const FRACTPATH_APP_URL =
-  process.env.FRACTPATH_APP_URL || "https://app.fractpath.com";
 const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
+const HUBSPOT_ENABLED =
+  (process.env.HUBSPOT_ENABLED || "").toLowerCase() === "true";
 
 const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW = 60_000;
@@ -19,23 +19,75 @@ function isRateLimited(ip: string): boolean {
   return entry.count > RATE_LIMIT_MAX;
 }
 
-/**
- * Marketing must treat the widget snapshot as an opaque, contract-defined payload.
- * HubSpot upsert is a non-blocking side effect and must not depend on snapshot internals.
- */
+const REQUIRED_LITE_KEYS = [
+  "contract_version",
+  "schema_version",
+  "created_at",
+  "persona",
+  "inputs",
+  "basic_results",
+] as const;
+
+const FULL_ONLY_KEYS = [
+  "output_hash",
+  "input_hash",
+  "full_results",
+  "settlements",
+] as const;
+
+function isLitePayload(
+  snapshot: unknown,
+): snapshot is Record<string, unknown> {
+  if (typeof snapshot !== "object" || snapshot === null || Array.isArray(snapshot)) {
+    return false;
+  }
+  const obj = snapshot as Record<string, unknown>;
+
+  for (const key of REQUIRED_LITE_KEYS) {
+    if (!(key in obj) || obj[key] === undefined) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function containsFullOnlyKeys(snapshot: Record<string, unknown>): boolean {
+  for (const key of FULL_ONLY_KEYS) {
+    if (key in snapshot) return true;
+  }
+
+  if (
+    typeof snapshot.outputs === "object" &&
+    snapshot.outputs !== null &&
+    "settlements" in (snapshot.outputs as Record<string, unknown>)
+  ) {
+    const settlements = (snapshot.outputs as Record<string, unknown>).settlements;
+    if (typeof settlements === "object" && settlements !== null) {
+      const std = (settlements as Record<string, unknown>).standard;
+      if (typeof std === "object" && std !== null) {
+        const stdObj = std as Record<string, unknown>;
+        if ("raw_payout" in stdObj || "transfer_fee" in stdObj || "clamp" in stdObj) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 async function hubspotUpsert(
   email: string,
   snapshotJson: string,
   persona: string,
 ) {
-  if (!HUBSPOT_ACCESS_TOKEN) return;
+  if (!HUBSPOT_ENABLED || !HUBSPOT_ACCESS_TOKEN) return;
 
   try {
     const properties: Record<string, string> = {
       email,
       fp_persona: persona,
       fp_source: "homepage_calculator",
-      // Opaque snapshot capture (truncate for CRM field limits)
       fp_snapshot_json: snapshotJson.slice(0, 5000),
       fp_last_scenario_at: new Date().toISOString(),
       fp_deal_summary: `Marketing scenario: persona=${persona}, mode=marketing`,
@@ -127,54 +179,31 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Preserve snapshot opaquely; do not inspect/mutate fields.
-  const snapshotJson = JSON.stringify(snapshot);
-
-  // Persona is optional telemetry only. If present, accept common string values; otherwise "unknown".
-  let persona = "unknown";
-  if (
-    snapshot &&
-    typeof snapshot === "object" &&
-    "persona" in (snapshot as Record<string, unknown>)
-  ) {
-    const p = (snapshot as Record<string, unknown>).persona;
-    if (typeof p === "string" && p.trim()) persona = p.trim();
-  }
-
-  // App-owned draft token minting. Marketing must not mint locally.
-  let draftToken: string | null = null;
-  try {
-    const mintRes = await fetch(`${FRACTPATH_APP_URL}/api/drafts/mint`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, snapshot }),
-    });
-
-    if (mintRes.ok) {
-      const mintData = await mintRes.json();
-      draftToken = typeof mintData?.token === "string" ? mintData.token : null;
-    }
-  } catch (err) {
-    console.error("[lead] draft mint failed:", err);
-  }
-
-  // Non-blocking side effect
-  hubspotUpsert(email, snapshotJson, persona).catch(() => {});
-
-  if (!draftToken) {
+  if (!isLitePayload(snapshot)) {
     return NextResponse.json(
-      {
-        ok: false,
-        error:
-          "Unable to save your scenario right now. Please try again shortly.",
-      },
-      { status: 502 },
+      { ok: false, error: "Invalid snapshot: missing required V1 lite fields" },
+      { status: 422 },
     );
   }
 
-  return NextResponse.json({
-    ok: true,
-    token: draftToken,
-    resumeUrl: `${FRACTPATH_APP_URL}/resume?token=${draftToken}`,
-  });
+  if (containsFullOnlyKeys(snapshot)) {
+    return NextResponse.json(
+      { ok: false, error: "Rejected: payload contains full-only fields" },
+      { status: 422 },
+    );
+  }
+
+  const snapshotJson = JSON.stringify(snapshot);
+  const persona =
+    typeof snapshot.persona === "string" && snapshot.persona.trim()
+      ? snapshot.persona.trim()
+      : "unknown";
+
+  hubspotUpsert(email, snapshotJson, persona).catch(() => {});
+
+  console.log(
+    `[lead] captured: email=${email}, persona=${persona}, contract_version=${String(snapshot.contract_version)}`,
+  );
+
+  return NextResponse.json({ ok: true });
 }

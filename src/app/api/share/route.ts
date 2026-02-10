@@ -18,8 +18,22 @@ const AWS_REGION = (process.env.AWS_REGION || "").trim();
 const AWS_ACCESS_KEY_ID = (process.env.AWS_ACCESS_KEY_ID || "").trim();
 const AWS_SECRET_ACCESS_KEY = (process.env.AWS_SECRET_ACCESS_KEY || "").trim();
 
+// NEW: configurable landing URL (defaults to app root)
+const SHARE_CONTINUE_URL = (
+  process.env.SHARE_CONTINUE_URL || "https://app.fractpath.com"
+).trim();
+
 function isValidEmail(s: string) {
   return s.includes("@") && s.length <= 254;
+}
+
+function isValidUrl(s: string) {
+  try {
+    const u = new URL(s);
+    return u.protocol === "https:" && s.length <= 2048;
+  } catch {
+    return false;
+  }
 }
 
 function getSesClient(): SESClient | null {
@@ -116,6 +130,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Validate continue URL (fail closed to safe default)
+  const continueUrl = isValidUrl(SHARE_CONTINUE_URL)
+    ? SHARE_CONTINUE_URL
+    : "https://app.fractpath.com";
+
   try {
     // Explicitly treat summary as opaque (accepted but not inspected).
     void summary;
@@ -133,15 +152,14 @@ export async function POST(request: NextRequest) {
             Text: {
               Data:
                 "You were shared a FractPath scenario.\n\n" +
-                "To view it and continue, open the FractPath app:\n" +
-                "https://app.fractpath.com\n\n" +
+                "To view it and continue:\n" +
+                `${continueUrl}\n\n` +
                 "If you didn’t request this, you can ignore this email.\n\n" +
                 "— FractPath\n",
               Charset: "UTF-8",
             },
           },
         },
-
         ReplyToAddresses: [SES_FROM],
       }),
     );

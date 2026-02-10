@@ -1,251 +1,212 @@
-TICKET MKT-020 — Agent prompts for calculator logic + visualization
-Ticket ID
+# MKT-020 — Marketing calculator embed + persona framing (agent-ready, widget-backed)
 
-MKT-020
+## Sprint
+Sprint 0 (alignment-only rewrite) → Sprint 5 (implementation)
 
-Title
+## Objective
+Define **agent-ready prompts and constraints** for implementing the **marketing calculator experience**
+such that:
 
-Agent-ready prompts for calculator logic, scenario math, and data visualization (marketing-safe)
+- All math and projections are executed by the **FractPath calculator widget** (source of truth)
+- Marketing performs **no calculator math**
+- Personas (Homeowner, Buyer, Realtor) receive **tailored value framing** via widget presentation
+- Outputs are **illustrative, non-binding, and investor-safe**
+- UX is conversion-oriented and consistent with the app (modal inputs + Apply)
+- No deal persistence, authentication, or backend logic is introduced in marketing
 
-Objective
+This calculator is a **teaching + conversion surface**, not a contract engine.
 
-Create precise, constrained agent prompts that enable AI tools to build the marketing calculator logic and visuals such that:
+---
 
-the math is consistent with your term sheet model
+## Non-Goals (Explicit)
+Marketing must NOT implement:
+- Calculator math or scenario logic
+- Deal creation or persistence
+- User accounts or authentication
+- Negotiation or counterparty logic
+- Payments or financial workflows
+- AVM or property data lookups
+- Backend APIs beyond lead capture / share delivery
 
-outputs are illustrative and non-binding
+---
 
-personas see tailored value framing
-
-floors, ceilings, and timing incentives are visible (but simplified)
-
-visuals are modern, minimal, and investor-presentable
-
-no app logic, deal creation, or persistence is introduced
-
-This calculator is a teaching + conversion tool, not the contract engine.
-
-Non-goals
-
-No deal persistence
-
-No user accounts
-
-No negotiation logic
-
-No payments
-
-No AVM calls
-
-No contract generation
-
-No backend APIs
-
-Canonical references (agents must treat as truth)
-
+## Canonical References (Agents must treat as truth)
 Agents must adhere to:
 
-docs/marketing/website-copy/calculator.md
+- Widget integration contract (mirrored via WGT-INT-001)
+- Widget UI + modal semantics (WGT-030)
+- Widget gating rules (WGT-031)
+- DraftSnapshot schema (WGT-040)
+- Contract versioning policy (WGT-050)
 
-Term model concepts from:
+Marketing-specific references:
+- `docs/marketing/website-copy/calculator.md`
+- Persona framing rules (MKT-018)
+- Legal guardrails (OPS-003 / OPS-004)
+- Design system:
+  - shadcn/ui
+  - Tailwind
+  - Dark mode
+  - Cyan accent (AA compliant)
 
-Floors (FM)
+---
 
-Ceilings (CM)
+## Calculator Scope (Locked)
 
-Timing factor (early / standard / late)
+### Inputs
+- Inputs are rendered and validated by the **widget**
+- Marketing must not define or compute inputs
+- Inputs are captured via **widget-owned modal overlay** with explicit **Apply**
 
-Persona framing rules from MKT-018
+Persona-specific required inputs (handled by widget):
+- Homeowner: FMV, mortgage balance, cash structure, timeline
+- Buyer: affordability, horizon, target value
+- Realtor: FMV, commission assumptions (defaulted)
 
-Legal guardrails from OPS-003 / OPS-004
+No “advanced inputs” are editable in marketing.
+Assumptions are displayed read-only inside the modal accordion.
 
-Design system:
+---
 
-shadcn/ui
+### Outputs (Marketing-Safe Only)
+Marketing may display **only** outputs rendered by the widget in `mode="marketing"`,
+as governed by WGT-031.
 
-Tailwind
+These include:
+- Persona-framed headline KPI cards
+- 1–2 lightweight, non-interactive visualizations
+- Read-only assumptions + disclosures
+- Empty-state output before first Apply
 
-Dark mode
+Marketing must not infer, transform, or recompute widget outputs.
 
-Cyan accent (AA compliant)
+---
 
-Calculator scope (locked)
-Inputs (fixed defaults, editable)
+## Persona Framing Rules (Marketing Only)
+Persona framing is **copy- and layout-level only**.
+Math and numeric values remain identical.
 
-Property value (SV)
-
-Upfront contribution
-
-Monthly contribution
-
-Horizon (years)
-
-Rules:
-
-Inputs show $ and commas
-
-Internal values remain numeric
-
-Defaults are clearly referenced in outputs
-
-No “advanced inputs” on marketing site.
-
-Core derived values (marketing-safe)
-
-Agents may compute:
-
-Total capital contributed
-
-Estimated equity share (simplified)
-
-Estimated future property value (modeled appreciation)
-
-Buyer implied purchase price
-
-Homeowner remaining equity
-
-Illustrative exit outcomes:
-
-Early
-
-Standard
-
-Late
-
-Agents must not compute:
-
-IRR
-
-APR
-
-Yield
-
-Investment returns phrasing
-
-Visualization requirements
-Required visuals
-
-Equity split visualization
-
-Buyer vs Homeowner
-
-Donut or stacked bar
-
-Labeled as “illustrative”
-
-Value over time
-
-Simple line chart
-
-Current → horizon
-
-No real-time pricing
-
-Exit scenario comparison
-
-Three-column comparison
-
-Early / Standard / Late
-
-Shows:
-
-Buyer payout range
-
-Homeowner net range
-
-Floor / ceiling badges
-
-Persona-specific framing (copy-level only)
-Buyer view
-
+### Homeowner framing
 Emphasize:
-
-Path to ownership
-
-Equity accumulation
-
-Implied purchase price vs future value
+- Cash unlocked
+- Remaining equity
+- No new debt
 
 De-emphasize:
+- Buyer upside framing
+- Platform mechanics
 
-Fees
-
-Platform mechanics
-
-Homeowner view
-
+### Buyer framing
 Emphasize:
-
-Cash unlocked
-
-Remaining equity
-
-No new debt
+- Path to ownership
+- Equity accumulation
+- Implied purchase price vs future value
 
 De-emphasize:
+- Fees
+- Platform mechanics
 
-Buyer upside framing
-
-Realtor view
+### Realtor framing (beta)
+Accessed via tertiary entry (not primary toggle).
 
 Emphasize:
-
-New deal path
-
-Expanded solution set
-
-Participation opportunity
+- New deal path
+- Expanded solution set
+- Commission participation opportunity
 
 De-emphasize:
+- Financial math details
+- Platform internals
 
-Financial math details
+Agents must implement **copy swaps only**.
+They must not change math or outputs per persona.
 
-Agents must implement copy swaps only, not different math.
+---
 
-A) Master calculator agent prompt
+## Visualization Requirements (Widget-Rendered)
+Marketing relies on widget-rendered visuals only.
 
+Required visuals (marketing mode):
+- Equity / value split visualization (donut or stacked bar)
+- Value-over-time line chart
+- Optional early / standard / late illustrative comparison (if provided by widget)
+
+All visuals must be:
+- Labeled “Illustrative”
+- Non-interactive (no drill-down)
+- Mobile-friendly
+- Free of financial jargon
+
+---
+
+## Gating + CTA Semantics (Marketing)
+
+### Primary CTA
+**“Save & Continue”**
+- Triggers widget event `onMarketingSnapshot(snapshot)`
+- Widget does not:
+  - capture email
+  - mint tokens
+  - navigate
+  - call APIs
+
+### Secondary CTA
+**“Edit Inputs”**
+- Opens widget input modal
+
+### Optional Share CTA
+- Emits `onShareSummary(summary)`
+- Marketing host handles delivery
+
+### Host Responsibilities
+Marketing host is responsible for:
+- Email capture
+- Lead submission (HubSpot)
+- Draft-token minting (via app-owned API)
+- Navigation to app signup/resume
+
+---
+
+## Agent Prompt Deliverables (Updated)
+
+> ⚠️ Important change from prior versions  
+> Agents must NOT implement calculator math or visuals independently.
+> All math and visuals come from the widget.
+
+### A) Master marketing calculator embed prompt
 Create:
+`docs/marketing/agent-prompts/calculator-master.md`
 
-docs/marketing/agent-prompts/calculator-master.md
+**Paste-ready prompt**
+You are implementing the FractPath marketing calculator experience.
 
-
-Paste-ready prompt:
-
-You are building a marketing calculator for FractPath.
+You must embed the FractPath calculator widget in mode="marketing".
 
 Constraints:
 
-This calculator is illustrative only.
+Do not implement calculator math.
 
-It must not resemble a loan calculator.
+Do not compute projections or scenarios.
 
-It must not show investment returns or yields.
+Do not add backend logic, persistence, or authentication.
 
-All outputs must be labeled “Estimated” or “Illustrative.”
+Do not show binding or contractual language.
 
-Inputs:
+Responsibilities:
 
-Property value
+Render the widget with persona selection enabled.
 
-Upfront contribution
+Place the widget above-the-fold.
 
-Monthly contribution
+Ensure modal input UX is accessible and clear.
 
-Horizon (years)
+Handle widget-emitted events:
 
-Outputs:
+onMarketingSnapshot
 
-Estimated equity split
-
-Estimated value over time
-
-Early / standard / late exit comparison
+onShareSummary (if enabled)
 
 Design:
-
-Minimal
-
-Modern
 
 shadcn/ui + Tailwind
 
@@ -253,133 +214,88 @@ Dark mode
 
 Cyan accent
 
-You must not add backend logic, persistence, or authentication.
+Minimal, investor-presentable
+
+All outputs must be clearly labeled “Illustrative”.
+
 Ask clarifying questions only if absolutely necessary.
 
-B) Math logic prompt (explicit but simplified)
 
+### B) Persona framing prompt (copy only)
 Create:
+`docs/marketing/agent-prompts/calculator-personas.md`
 
-docs/marketing/agent-prompts/calculator-math.md
+You are implementing persona-specific framing for the marketing calculator.
+
+Rules:
+
+Personas: Homeowner, Buyer, Realtor (beta)
+
+Realtor access is tertiary (not in primary toggle).
+
+Swap labels, headings, and explanatory copy only.
+
+Never change numeric outputs.
+
+Never recompute math.
+
+Follow persona emphasis/de-emphasis rules from MKT-020.
 
 
-Agent instructions:
-
-Use simple proportional math
-
-Assume linear accumulation of equity
-
-Apply:
-
-Floor protection (minimum outcome)
-
-Ceiling cap (maximum outcome)
-
-Timing factor modifies payout, not FMV
-
-Clearly annotate where floors/ceilings apply
-
-Required labels:
-
-“Floor protection applied”
-
-“Ceiling cap applied”
-
-“Timing affects payout, not home value”
-
-C) Visualization prompt
-
+### C) Gating + CTA prompt
 Create:
+`docs/marketing/agent-prompts/calculator-gating.md`
 
-docs/marketing/agent-prompts/calculator-visuals.md
+You are implementing marketing gating and CTAs around the FractPath calculator widget.
 
+Rules:
 
-Agent instructions:
+Use widget-provided events only.
 
-Use lightweight chart library (Recharts or equivalent)
+Do not inspect or modify calculator math.
 
-Ensure:
+Require email capture before revealing app continuation.
 
-Readability on mobile
-
-Tooltips explain terms in plain language
-
-No financial jargon
-
-D) Persona framing prompt
-
-Create:
-
-docs/marketing/agent-prompts/calculator-personas.md
-
-
-Agent instructions:
-
-Toggle persona labels only
-
-Swap explanatory text
-
-Keep math identical
-
-Never change outputs per persona
-
-E) Gating + CTA prompt
-
-Create:
-
-docs/marketing/agent-prompts/calculator-gating.md
-
-
-Agent instructions:
-
-Require email to reveal full outputs
-
-Capture persona + summary values
-
-CTA after reveal:
-
+CTA after capture:
 “Build and negotiate these terms inside the app”
 
 Link to:
 https://app.fractpath.com/signup
 
-Guardrails (repeat in every prompt)
 
+> ⚠️ Previous standalone math and visualization agent prompts are **intentionally removed**.
+> Math and visuals are now widget-owned to prevent drift.
+
+---
+
+## Guardrails (Repeat in All Prompts)
 Agents must not:
-
-Mention ROI or returns
-
-Mention interest rates
-
-Use loan terminology
-
-Suggest guarantees
-
-Add backend logic
+- Mention ROI, IRR, APR, yields, or returns
+- Use loan terminology
+- Suggest guarantees
+- Add backend logic
+- Bypass widget gating rules
 
 Violation = discard output.
 
-Acceptance Criteria (Definition of Done)
+---
 
-Calculator math aligns with term concepts
+## Acceptance Criteria (Definition of Done)
+- Marketing calculator embeds the widget in `mode="marketing"`
+- No calculator math exists outside the widget
+- Persona framing is clear and conversion-oriented
+- Visuals and outputs are illustrative and non-binding
+- CTA flow hands off cleanly to app
+- Experience is demo-safe for investors and partners
 
-Visuals are clean and professional
+---
 
-Personas are clearly addressed
-
-Legal posture is preserved
-
-Calculator can be built entirely via agent prompts
-
-Output is demo-safe for investors and partners
-
-Deliverables
-
-Create:
-
+## Deliverables
+Create / update:
 docs/marketing/agent-prompts/
 ├─ calculator-master.md
-├─ calculator-math.md
-├─ calculator-visuals.md
 ├─ calculator-personas.md
 └─ calculator-gating.md
+
+
+(No standalone math or visualization agent prompts in marketing.)

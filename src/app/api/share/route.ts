@@ -125,17 +125,23 @@ export async function POST(request: NextRequest) {
         Source: SES_FROM,
         Destination: { ToAddresses: [email] },
         Message: {
-          Subject: { Data: "Your FractPath Scenario", Charset: "UTF-8" },
+          Subject: {
+            Data: "Your FractPath scenario is ready",
+            Charset: "UTF-8",
+          },
           Body: {
             Text: {
               Data:
                 "You were shared a FractPath scenario.\n\n" +
-                "Open the FractPath app to continue.\n\n" +
-                "— FractPath",
+                "To view it and continue, open the FractPath app:\n" +
+                "https://app.fractpath.com\n\n" +
+                "If you didn’t request this, you can ignore this email.\n\n" +
+                "— FractPath\n",
               Charset: "UTF-8",
             },
           },
         },
+
         ReplyToAddresses: [SES_FROM],
       }),
     );

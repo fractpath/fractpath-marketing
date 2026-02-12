@@ -1,175 +1,79 @@
-**Status: MOVED → fractpath-calculator-widget (WGT-020)**
+# TICKET MKT-012 — Investor "Read-Only" Share Mode (No Email Gate)
+Ticket ID: MKT-012  
+Status: MOVED → fractpath-calculator-widget (WGT-020)  
+Owner Repo: fractpath-calculator-widget  
+Last Updated: 2026-02-11  
 
 ---
 
-TICKET MKT-012 — Investor "read-only" share mode (no email gate)
-Ticket ID
+## Purpose (Marketing Scope Only)
 
-MKT-012
+This ticket is closed in `fractpath-marketing` and serves as a scope guardrail.
 
-Title
+All share-mode gating logic, UI state handling, and output rendering behavior live inside the calculator repo:
 
-Investor share mode (read-only, ungated, credibility-first)
+- **WGT-020** — Share mode semantics (mode=share)
+- **WGT-030 / WGT-031** — Widget surface + gating behavior
+- **WGT-INT-001** — Locked public interface
 
-## Notes
+Marketing is responsible only for:
 
-This ticket has been fully moved to the `fractpath-calculator-widget` repository.
+- forwarding query params to the widget
+- page-level layout polish
+- analytics wiring (if applicable)
 
-- **WGT-020** covers the `?mode=share` bypass of email gating, inline badge, and share-mode CTA behavior within the widget.
-- Marketing will integrate the widget's share mode via query param forwarding in the wrapper component (Batch MKT-C).
-- **Source of truth:** Marketing must not contain calculator math. Widget is canonical. See `docs/migration/calculator-widget.md`.
+Marketing must not contain:
+- calculator math
+- role logic
+- snapshot persistence logic
+- share token minting
 
 ---
 
-Objective
+# Architecture Alignment (Frozen)
 
-Create an Investor Share Mode that allows you to send a link to investors/partners that:
+## Canonical Compute
+All scenario math is implemented in the calculator repo.  
+Marketing renders widget outputs only.
 
-looks polished and credible
+## Share Model (Aligned with Sprint 8 Hardening)
 
-demonstrates the calculator + visualization immediately
+This ticket does NOT modify application share-token semantics.
 
-does not require email gating (to reduce friction)
+- Only OWNER may mint share tokens (app concern).
+- Any user may distribute an existing share token URL (app concern).
+- `?mode=share` in marketing is a **presentation mode**, not an access-control mechanism.
 
-does not create compliance risk or overpromise
+Important:
+`?mode=share` is not related to `app.fractpath.com/share?t=token`.  
+It is purely a marketing embed configuration flag.
 
-still tracks engagement via Plausible events
+---
 
-This enables quick sharing in outreach messages and decks without "please enter your email" friction.
+# Objective (Marketing Perspective)
 
-Non-goals
+Enable a frictionless “Investor Share Mode” in marketing that:
 
-No investor persona (secondary market investors are post-MVP)
+- Displays calculator outputs immediately
+- Bypasses email gating
+- Maintains compliance posture
+- Does not create DB state
+- Does not mint share tokens
+- Does not persist snapshots
 
-No new pricing page
+This is a credibility-first presentation mode.
 
-No portal signup changes
+---
 
-No additional data providers / APIs
+# Implementation Requirements (Marketing Scope Only)
 
-Preconditions
+## A) URL Parameter Forwarding
 
-MKT-001 → MKT-011 complete
+Marketing must:
 
-Calculator gating works in normal mode
-
-Plausible is configured and events are firing (MKT-011)
-
-Dark/light modes work
-
-Implementation Requirements
-A) Define investor share mode trigger (URL parameter)
-
-Investor mode is activated when URL contains:
-
-?mode=share
+- Detect `?mode=share`
+- Forward `mode="share"` into the widget embed
+- Forward `persona` if present
 
 Examples:
 
-https://fractpath.com/?mode=share
-
-https://fractpath.com/?mode=share&persona=buyer
-
-Rules:
-
-If mode=share, disable email gating
-
-Default persona remains homeowner unless persona param provided
-
-B) Behavior changes in share mode (required)
-
-When mode=share is active:
-
-Calculator outputs are not blurred
-
-Email gate UI is hidden entirely
-
-Show a small inline badge above calculator:
-
-"Share Mode" (subtle)
-
-Add a short note below outputs:
-
-"This is an illustrative scenario. Create a secure profile to save scenarios and adjust advanced parameters."
-
-CTA after outputs:
-
-Primary: "Create secure profile" → https://app.fractpath.com/signup?persona={persona}
-
-Secondary: "Back to standard mode" → link to / (no query params)
-
-C) HubSpot submission rules in share mode
-
-In share mode:
-
-Do not submit anything to HubSpot
-
-Do not ask for email
-
-You may still provide an optional "Get updates" link in footer or contact section, but it should not interrupt the calculator experience.
-
-D) Tracking (Plausible)
-
-Add one additional analytics event:
-
-share_mode_viewed
-
-properties: { persona }
-
-Ensure existing events still fire:
-
-persona_selected
-
-calculator_reveal_clicked should NOT fire because there is no reveal
-
-use a new event instead for engagement:
-
-calculator_used on first input interaction
-
-E) UI polish for share mode (investor-presentable)
-
-In share mode:
-
-ensure the default values are loaded and chart is visible immediately
-
-ensure the narrative on the page is calm and confident
-
-ensure the disclaimers are visible without being heavy
-
-Acceptance Criteria (Definition of Done)
-
-Visiting /?mode=share shows calculator outputs immediately (no gate)
-
-No HubSpot lead submission occurs in share mode
-
-Badge and share-mode note appear
-
-CTA to signup is present and includes persona query param
-
-Plausible event share_mode_viewed fires with persona
-
-Standard mode remains unchanged
-
-Vercel build succeeds and no console errors
-
-QA Checklist
-
- /?mode=share works on mobile
-
- /?mode=share&persona=realtor sets realtor persona
-
- No email input appears in share mode
-
- Analytics events fire as expected
-
- No compliance language regressions
-
-Deliverables
-
-URL-param controlled share mode
-
-Updated calculator gating logic to support bypass
-
-Share-mode UI elements
-
-Analytics event for share-mode view

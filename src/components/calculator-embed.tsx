@@ -9,6 +9,12 @@ import {
   type ShareSummary,
   type WidgetEvent,
 } from "fractpath-calculator-widget";
+import {
+  computeDeal,
+  type DealTerms,
+  type ScenarioAssumptions,
+  type DealSnapshot,
+} from "@/lib/compute";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +26,51 @@ import {
   trackLeadEmailSubmitted,
   trackCustomEvent,
 } from "@/lib/analytics";
+
+function snapshotToDealTerms(snapshot: DraftSnapshot): DealTerms | null {
+  const iba = snapshot.inputs.initialBuyAmount;
+  if (iba <= 0) return null;
+
+  return {
+    contract_version: snapshot.contract_version,
+    schema_version: snapshot.schema_version,
+    iba_usd: iba,
+    floor_multiple: 0.8,
+    ceiling_multiple: 2.0,
+    downside_mode: "HARD_FLOOR",
+    timing_factor_gain_only: true,
+    maturity_months: snapshot.inputs.termYears * 12,
+  };
+}
+
+function snapshotToAssumptions(snapshot: DraftSnapshot): ScenarioAssumptions | null {
+  const start = snapshot.inputs.homeValue;
+  const growthRate = snapshot.inputs.annualGrowthRate / 100;
+  const years = snapshot.inputs.termYears;
+  const end = start * Math.pow(1 + growthRate, years);
+
+  if (start <= 0 || years <= 0) return null;
+
+  return {
+    start_fmv_usd: start,
+    end_fmv_usd: end,
+    months_held: years * 12,
+  };
+}
+
+function recomputeSnapshot(snapshot: DraftSnapshot): DealSnapshot | null {
+  const terms = snapshotToDealTerms(snapshot);
+  const assumptions = snapshotToAssumptions(snapshot);
+  if (!terms || !assumptions) return null;
+
+  try {
+    const nowIso = new Date().toISOString();
+    return computeDeal(terms, assumptions, nowIso);
+  } catch (err) {
+    console.warn("[compute] recompute failed:", err);
+    return null;
+  }
+}
 
 const PERSONA_OPTIONS: { value: CalculatorPersona; label: string }[] = [
   { value: "homeowner", label: "Homeowner" },
@@ -81,6 +132,14 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
       setGate({ step: "save_submitting", snapshot: gate.snapshot, email });
       trackLeadEmailSubmitted(persona);
 
+      const canonicalSnapshot = recomputeSnapshot(gate.snapshot);
+      if (canonicalSnapshot) {
+        console.log("[compute] canonical recompute succeeded", {
+          investor_multiple: canonicalSnapshot.outputs.investor_multiple,
+          investor_settlement_usd: canonicalSnapshot.outputs.investor_settlement_usd,
+        });
+      }
+
       try {
         const res = await fetch("/api/lead", {
           method: "POST",
@@ -89,6 +148,7 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
             email,
             persona,
             draftSnapshot: gate.snapshot,
+            canonicalSnapshot: canonicalSnapshot ?? undefined,
           }),
         });
 

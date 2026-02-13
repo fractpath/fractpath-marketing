@@ -1,4 +1,4 @@
-import type { DealTerms, ScenarioAssumptions, DealResults } from "./types.js";
+import type { DealTerms, ScenarioAssumptions, DealSnapshot } from "./types.js";
 import { roundMoney, roundRate, clamp } from "./rounding.js";
 import { irrMonthlySingleOutflowInflow, annualizeMonthly } from "./irr.js";
 import { COMPUTE_VERSION } from "./version.js";
@@ -7,7 +7,7 @@ export function computeDeal(
   terms: DealTerms,
   assumptions: ScenarioAssumptions,
   nowIso: string,
-): DealResults {
+): DealSnapshot {
   if (!nowIso || typeof nowIso !== "string" || nowIso.trim().length < 10) {
     throw new Error("nowIso is required for deterministic compute");
   }

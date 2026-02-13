@@ -6,7 +6,7 @@ import {
   annualizeMonthly,
 } from "../src/irr.js";
 import { COMPUTE_SEMVER, COMPUTE_VERSION } from "../src/version.js";
-import type { DealTerms, ScenarioAssumptions } from "../src/types.js";
+import type { DealTerms, ScenarioAssumptions, DealSnapshot } from "../src/types.js";
 
 const NOW = "2026-02-13T00:00:00.000Z";
 
@@ -272,5 +272,33 @@ describe("computeDeal", () => {
   it("throws when nowIso is not provided (deterministic core)", () => {
     // @ts-expect-error - nowIso is required by design
     expect(() => computeDeal(makeTerms(), makeAssumptions())).toThrow(/nowIso is required/i);
+  });
+
+  it("returns a DealSnapshot with all required keys", () => {
+    const snap: DealSnapshot = computeDeal(makeTerms(), makeAssumptions(), NOW);
+
+    expect(snap).toHaveProperty("compute_version");
+    expect(snap).toHaveProperty("computed_at");
+    expect(snap).toHaveProperty("inputs");
+    expect(snap).toHaveProperty("assumptions");
+    expect(snap).toHaveProperty("outputs");
+
+    expect(typeof snap.compute_version).toBe("string");
+    expect(typeof snap.computed_at).toBe("string");
+    expect(typeof snap.inputs).toBe("object");
+    expect(typeof snap.assumptions).toBe("object");
+    expect(typeof snap.outputs).toBe("object");
+  });
+
+  it("DealSnapshot is JSON-serializable (roundtrip)", () => {
+    const snap = computeDeal(makeTerms(), makeAssumptions(), NOW);
+    const json = JSON.stringify(snap);
+    const clone = JSON.parse(json);
+
+    expect(clone.compute_version).toBe(snap.compute_version);
+    expect(clone.computed_at).toBe(snap.computed_at);
+    expect(clone.inputs).toEqual(snap.inputs);
+    expect(clone.assumptions).toEqual(snap.assumptions);
+    expect(clone.outputs).toEqual(snap.outputs);
   });
 });

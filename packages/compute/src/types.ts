@@ -30,10 +30,12 @@ export interface DealOutputs {
   timing_factor_effective: number;
 }
 
-export interface DealResults {
+export interface DealSnapshot {
   compute_version: string;
   computed_at: string;
   inputs: DealTerms;
   assumptions: ScenarioAssumptions;
   outputs: DealOutputs;
 }
+
+export type DealResults = DealSnapshot;

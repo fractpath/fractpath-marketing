@@ -6,6 +6,7 @@ export { irrMonthlySingleOutflowInflow, annualizeMonthly } from "./irr.js";
 export type {
   DealTerms,
   ScenarioAssumptions,
+  DealSnapshot,
   DealResults,
   DealOutputs,
   DownsideMode,

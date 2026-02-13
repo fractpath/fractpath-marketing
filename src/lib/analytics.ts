@@ -1,40 +1,41 @@
-import type { WidgetEvent, CalculatorPersona } from "fractpath-calculator-widget";
+// src/lib/analytics.ts
+/**
+ * Minimal analytics facade for marketing.
+ * Keep client-safe (no server-only imports) and resilient in dev.
+ *
+ * NOTE: CalculatorEmbed imports:
+ * - trackEvent
+ * - trackPersonaSelected
+ * - trackLeadEmailSubmitted
+ * - trackCustomEvent
+ *
+ * We provide stable exports even if you later wire PostHog/GA/Segment.
+ */
 
-declare global {
-  interface Window {
-    plausible?: (
-      name: string,
-      opts?: { props?: Record<string, string> },
-    ) => void;
-  }
-}
+export type AnalyticsPayload = Record<string, unknown>;
 
-export function trackEvent(event: WidgetEvent) {
-  if (typeof window === "undefined") return;
-
+export function trackEvent(event: unknown) {
   try {
-    const name = event.type;
-    const persona = event.persona;
-    window.plausible?.(name, { props: { persona } });
+    // eslint-disable-next-line no-console
+    console.log("[analytics:event]", event);
   } catch {
-    // analytics must never break the app
+    // no-op
   }
 }
 
-export function trackCustomEvent(name: string, props?: Record<string, string>) {
-  if (typeof window === "undefined") return;
-
+export function trackCustomEvent(name: string, payload: AnalyticsPayload = {}) {
   try {
-    window.plausible?.(name, props ? { props } : undefined);
+    // eslint-disable-next-line no-console
+    console.log("[analytics:custom]", { name, ...payload });
   } catch {
-    // analytics must never break the app
+    // no-op
   }
 }
 
-export function trackPersonaSelected(persona: CalculatorPersona) {
+export function trackPersonaSelected(persona: string) {
   trackCustomEvent("persona_selected", { persona });
 }
 
-export function trackLeadEmailSubmitted(persona: CalculatorPersona) {
+export function trackLeadEmailSubmitted(persona: string) {
   trackCustomEvent("lead_email_submitted", { persona });
 }

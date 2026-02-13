@@ -1,5 +1,3 @@
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Container,
   Section,
@@ -8,95 +6,15 @@ import {
   TopNav,
   Footer,
 } from "@/components/ui-kit";
-import { CalculatorEmbed } from "@/components/calculator-embed";
-import {
-  Home,
-  Key,
-  Users,
-  BarChart3,
-  Handshake,
-  FileCheck,
-  Shield,
-  Scale,
-  Eye,
-} from "lucide-react";
+import { PersonaPageContent } from "@/components/persona-page-content";
+import { BarChart3, Handshake, FileCheck } from "lucide-react";
 
 export default function HomePage() {
   return (
     <div id="top" className="min-h-screen">
       <TopNav />
 
-      <Section className="bg-gradient-to-b from-background to-muted/30 pt-20 sm:pt-28 lg:pt-32">
-        <Container>
-          <div className="mx-auto max-w-3xl text-center">
-            <Badge variant="secondary" className="mb-4">
-              Scenario Modeling &middot; Not Financial Advice
-            </Badge>
-
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Debt-Free Equity Access
-              <span className="block text-muted-foreground">
-                &amp; a Path to Ownership
-              </span>
-            </h1>
-
-            <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-              Model scenarios for unlocking home equity or building ownership
-              &mdash; without traditional debt. All outputs are estimates for
-              informational purposes only.
-            </p>
-
-            <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-              <Button size="lg" asChild>
-                <a href="#calculator">See Your Options</a>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <a href="#realtor-beta">Join Beta</a>
-              </Button>
-            </div>
-          </div>
-        </Container>
-      </Section>
-
-      <Section id="calculator" className="bg-muted/30">
-        <Container>
-          <PageHeader
-            eyebrow="Scenario Calculator"
-            title="Model Your Path"
-            subtitle="Enter property details to see estimated equity scenarios. All outputs are for informational purposes only."
-          />
-
-          {/* IMPORTANT: actually render the embedded widget */}
-          <CalculatorEmbed />
-        </Container>
-      </Section>
-
-      <Section>
-        <Container>
-          <PageHeader
-            eyebrow="Why FractPath"
-            title="Built for Every Side of the Table"
-            subtitle="Whether you own, want to own, or help others own — FractPath models the possibilities."
-          />
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <FeatureCard
-              icon={Home}
-              title="Homeowners"
-              body="Access your home equity without taking on debt. Model cash-out scenarios while retaining ownership and seeing the buyback window effect."
-            />
-            <FeatureCard
-              icon={Key}
-              title="Buyers"
-              body="Build equity over time with monthly contributions. See projected ownership percentages, implied purchase prices, and payoff scenarios."
-            />
-            <FeatureCard
-              icon={Users}
-              title="Realtors"
-              body="Generate referral commissions through a new model. See projected earnings from referral fees and ongoing share percentages."
-            />
-          </div>
-        </Container>
-      </Section>
+      <PersonaPageContent />
 
       <Section id="how-it-works" className="bg-muted/30">
         <Container>
@@ -182,49 +100,6 @@ export default function HomePage() {
               title="Join the Beta"
               subtitle="Be among the first realtors to offer fractional equity paths to your clients. Early access, priority support, and referral commissions."
             />
-            <Button size="lg" asChild>
-              <a href="https://app.fractpath.com/signup">Request Beta Access</a>
-            </Button>
-          </div>
-        </Container>
-      </Section>
-
-      <Section>
-        <Container>
-          <PageHeader
-            eyebrow="Trust & Compliance"
-            title="Transparent by Design"
-            subtitle="FractPath is built with transparency, auditability, and manual-first operations at its core."
-          />
-          <div className="grid gap-6 sm:grid-cols-3">
-            <FeatureCard
-              icon={Shield}
-              title="No Hidden Fees"
-              body="All fees and timing factors are disclosed upfront in every scenario model. What you see is what you get."
-            />
-            <FeatureCard
-              icon={Scale}
-              title="Legal Compliance"
-              body="All agreements are executed through vetted legal processes. We operate within state regulatory frameworks."
-            />
-            <FeatureCard
-              icon={Eye}
-              title="Auditability"
-              body="Every calculation is deterministic and reproducible. No black-box models. You can verify every number."
-            />
-          </div>
-
-          <div className="mt-8 rounded-2xl border bg-muted/50 p-6 text-center">
-            <p className="text-xs leading-relaxed text-muted-foreground">
-              <strong>Disclaimer:</strong> FractPath provides scenario modeling
-              tools for informational purposes only. Outputs are estimates and
-              do not constitute financial, legal, or investment advice. All
-              scenarios are subject to change based on market conditions, legal
-              requirements, and other factors. FractPath does not guarantee any
-              returns or outcomes. Past performance is not indicative of future
-              results. Consult with qualified professionals before making
-              financial decisions.
-            </p>
           </div>
         </Container>
       </Section>

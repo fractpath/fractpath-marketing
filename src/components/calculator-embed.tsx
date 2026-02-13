@@ -6,6 +6,7 @@ import {
   FractPathCalculatorWidget,
   type CalculatorPersona,
   type DraftSnapshot,
+  type ShareSummary,
   type WidgetEvent,
 } from "fractpath-calculator-widget";
 
@@ -17,6 +18,7 @@ import {
   trackEvent,
   trackPersonaSelected,
   trackLeadEmailSubmitted,
+  trackCustomEvent,
 } from "@/lib/analytics";
 
 const PERSONA_OPTIONS: { value: CalculatorPersona; label: string }[] = [
@@ -27,24 +29,40 @@ const PERSONA_OPTIONS: { value: CalculatorPersona; label: string }[] = [
 
 type GateState =
   | { step: "idle" }
-  | { step: "email_gate"; snapshot: DraftSnapshot }
-  | { step: "submitting"; snapshot: DraftSnapshot; email: string }
-  | { step: "saved" }
-  | { step: "error"; message: string; snapshot: DraftSnapshot; email: string };
+  | { step: "save_gate"; snapshot: DraftSnapshot }
+  | { step: "save_submitting"; snapshot: DraftSnapshot; email: string }
+  | { step: "save_done" }
+  | { step: "save_error"; message: string; snapshot: DraftSnapshot; email: string }
+  | { step: "share_gate"; summary: ShareSummary }
+  | { step: "share_submitting"; summary: ShareSummary; email: string }
+  | { step: "share_done" }
+  | { step: "share_error"; message: string; summary: ShareSummary; email: string };
 
-export function CalculatorEmbed() {
-  const [persona, setPersona] = useState<CalculatorPersona>("homeowner");
+type CalculatorEmbedProps = {
+  persona: CalculatorPersona;
+  onPersonaChange: (persona: CalculatorPersona) => void;
+};
+
+export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedProps) {
   const [gate, setGate] = useState<GateState>({ step: "idle" });
   const [emailInput, setEmailInput] = useState("");
   const [widgetError, setWidgetError] = useState(false);
 
-  const handlePersonaChange = useCallback((newPersona: CalculatorPersona) => {
-    setPersona(newPersona);
-    trackPersonaSelected(newPersona);
-  }, []);
+  const handlePersonaChange = useCallback(
+    (newPersona: CalculatorPersona) => {
+      onPersonaChange(newPersona);
+      trackPersonaSelected(newPersona);
+    },
+    [onPersonaChange],
+  );
 
   const handleDraftSnapshot = useCallback((snapshot: DraftSnapshot) => {
-    setGate({ step: "email_gate", snapshot });
+    setGate({ step: "save_gate", snapshot });
+    setEmailInput("");
+  }, []);
+
+  const handleShareSummary = useCallback((summary: ShareSummary) => {
+    setGate({ step: "share_gate", summary });
     setEmailInput("");
   }, []);
 
@@ -52,15 +70,15 @@ export function CalculatorEmbed() {
     trackEvent(event);
   }, []);
 
-  const handleEmailSubmit = useCallback(
+  const handleSaveSubmit = useCallback(
     async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      if (gate.step !== "email_gate") return;
+      if (gate.step !== "save_gate") return;
 
       const email = emailInput.trim();
       if (!email || !email.includes("@")) return;
 
-      setGate({ step: "submitting", snapshot: gate.snapshot, email });
+      setGate({ step: "save_submitting", snapshot: gate.snapshot, email });
       trackLeadEmailSubmitted(persona);
 
       try {
@@ -76,11 +94,11 @@ export function CalculatorEmbed() {
 
         const data = await res.json();
 
-        if (data.ok || data.resume_token) {
-          setGate({ step: "saved" });
+        if (data.resume_token) {
+          setGate({ step: "save_done" });
         } else {
           setGate({
-            step: "error",
+            step: "save_error",
             message: data.error || "Something went wrong. Please try again.",
             snapshot: gate.snapshot,
             email,
@@ -88,9 +106,54 @@ export function CalculatorEmbed() {
         }
       } catch {
         setGate({
-          step: "error",
+          step: "save_error",
           message: "Network error. Please check your connection and try again.",
           snapshot: gate.snapshot,
+          email: emailInput.trim(),
+        });
+      }
+    },
+    [gate, emailInput, persona],
+  );
+
+  const handleShareSubmit = useCallback(
+    async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      if (gate.step !== "share_gate") return;
+
+      const email = emailInput.trim();
+      if (!email || !email.includes("@")) return;
+
+      setGate({ step: "share_submitting", summary: gate.summary, email });
+      trackCustomEvent("share_clicked", { persona });
+
+      try {
+        const res = await fetch("/api/share", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to_email: email,
+            shareSummary: gate.summary,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (data.share_token || data.ok) {
+          setGate({ step: "share_done" });
+        } else {
+          setGate({
+            step: "share_error",
+            message: data.error || "Something went wrong. Please try again.",
+            summary: gate.summary,
+            email,
+          });
+        }
+      } catch {
+        setGate({
+          step: "share_error",
+          message: "Network error. Please check your connection and try again.",
+          summary: gate.summary,
           email: emailInput.trim(),
         });
       }
@@ -138,15 +201,16 @@ export function CalculatorEmbed() {
             persona={persona}
             mode="marketing"
             onDraftSnapshot={handleDraftSnapshot}
+            onShareSummary={handleShareSummary}
             onEvent={handleEvent}
           />
         </WidgetErrorBoundary>
       </div>
 
-      {gate.step === "email_gate" && (
+      {gate.step === "save_gate" && (
         <Card className="mx-auto max-w-md rounded-2xl border-primary/20 shadow-md">
           <CardContent className="p-6">
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
+            <form onSubmit={handleSaveSubmit} className="space-y-4">
               <div className="text-center">
                 <h3 className="text-lg font-semibold">Save Your Scenario</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
@@ -181,18 +245,59 @@ export function CalculatorEmbed() {
         </Card>
       )}
 
-      {gate.step === "submitting" && (
+      {gate.step === "share_gate" && (
+        <Card className="mx-auto max-w-md rounded-2xl border-primary/20 shadow-md">
+          <CardContent className="p-6">
+            <form onSubmit={handleShareSubmit} className="space-y-4">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold">Share This Scenario</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Send an illustrative scenario summary to someone. This is
+                  non-binding and for informational purposes only.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="share-email">Recipient Email</Label>
+                <Input
+                  id="share-email"
+                  type="email"
+                  placeholder="recipient@example.com"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                Share Scenario
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => setGate({ step: "idle" })}
+              >
+                Cancel
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {(gate.step === "save_submitting" || gate.step === "share_submitting") && (
         <Card className="mx-auto max-w-md rounded-2xl">
           <CardContent className="flex items-center justify-center gap-3 p-6">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <p className="text-sm text-muted-foreground">
-              Saving your scenario...
+              {gate.step === "save_submitting"
+                ? "Saving your scenario..."
+                : "Sharing your scenario..."}
             </p>
           </CardContent>
         </Card>
       )}
 
-      {gate.step === "saved" && (
+      {gate.step === "save_done" && (
         <Card className="mx-auto max-w-md rounded-2xl border-green-500/20">
           <CardContent className="p-6 text-center">
             <p className="text-sm font-medium text-green-700 dark:text-green-400">
@@ -210,7 +315,25 @@ export function CalculatorEmbed() {
         </Card>
       )}
 
-      {gate.step === "error" && (
+      {gate.step === "share_done" && (
+        <Card className="mx-auto max-w-md rounded-2xl border-green-500/20">
+          <CardContent className="p-6 text-center">
+            <p className="text-sm font-medium text-green-700 dark:text-green-400">
+              Shared! The recipient will receive an illustrative scenario summary.
+            </p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mt-3"
+              onClick={() => setGate({ step: "idle" })}
+            >
+              Done
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {gate.step === "save_error" && (
         <Card className="mx-auto max-w-md rounded-2xl border-destructive/20">
           <CardContent className="p-6 text-center">
             <p className="text-sm text-destructive">{gate.message}</p>
@@ -219,7 +342,33 @@ export function CalculatorEmbed() {
                 variant="outline"
                 size="sm"
                 onClick={() =>
-                  setGate({ step: "email_gate", snapshot: gate.snapshot })
+                  setGate({ step: "save_gate", snapshot: gate.snapshot })
+                }
+              >
+                Try Again
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setGate({ step: "idle" })}
+              >
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {gate.step === "share_error" && (
+        <Card className="mx-auto max-w-md rounded-2xl border-destructive/20">
+          <CardContent className="p-6 text-center">
+            <p className="text-sm text-destructive">{gate.message}</p>
+            <div className="mt-4 flex justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setGate({ step: "share_gate", summary: gate.summary })
                 }
               >
                 Try Again

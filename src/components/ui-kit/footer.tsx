@@ -1,5 +1,8 @@
+"use client";
+
 import { Container } from "./container";
 import { Separator } from "@/components/ui/separator";
+import { trackCustomEvent } from "@/lib/analytics";
 
 export function Footer() {
   return (
@@ -15,9 +18,15 @@ export function Footer() {
           </div>
           <div>
             <h4 className="mb-3 text-sm font-semibold">Contact</h4>
-            <p className="text-sm text-muted-foreground">
+            <a
+              href="mailto:support@fractpath.com"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() =>
+                trackCustomEvent("cta_contact_clicked", { location: "footer" })
+              }
+            >
               support@fractpath.com
-            </p>
+            </a>
             <p className="mt-1 text-sm text-muted-foreground">
               Questions? We&apos;re here to help.
             </p>
@@ -41,12 +50,15 @@ export function Footer() {
           </div>
         </div>
         <Separator className="my-8" />
-        <div className="text-center">
+        <div className="text-center space-y-2">
           <p className="text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} FractPath, Inc. All rights
             reserved. All scenarios are estimates for informational purposes
             only. FractPath does not provide financial, legal, or investment
             advice. Past performance is not indicative of future results.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            We use privacy-friendly analytics to improve the site.
           </p>
         </div>
       </Container>

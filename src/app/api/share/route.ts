@@ -3,13 +3,6 @@ export const runtime = "nodejs";
 import { NextRequest, NextResponse } from "next/server";
 import { SESClient, SendEmailCommand } from "@aws-sdk/client-ses";
 
-/**
- * Marketing Share (mode="marketing")
- * - Marketing owns branded email delivery.
- * - Treat ShareSummary as an opaque payload (do not infer fields).
- * - Email sending happens ONLY if explicitly enabled.
- */
-
 const MARKETING_SHARE_EMAIL_ENABLED =
   (process.env.MARKETING_SHARE_EMAIL_ENABLED || "").toLowerCase() === "true";
 
@@ -18,28 +11,16 @@ const AWS_REGION = (process.env.AWS_REGION || "").trim();
 const AWS_ACCESS_KEY_ID = (process.env.AWS_ACCESS_KEY_ID || "").trim();
 const AWS_SECRET_ACCESS_KEY = (process.env.AWS_SECRET_ACCESS_KEY || "").trim();
 
-// NEW: configurable landing URL (defaults to app root)
-const SHARE_CONTINUE_URL = (
-  process.env.SHARE_CONTINUE_URL || "https://app.fractpath.com"
+const FRACTPATH_BASE_URL = (
+  process.env.FRACTPATH_BASE_URL || "https://fractpath.com"
 ).trim();
 
 function isValidEmail(s: string) {
   return s.includes("@") && s.length <= 254;
 }
 
-function isValidUrl(s: string) {
-  try {
-    const u = new URL(s);
-    return u.protocol === "https:" && s.length <= 2048;
-  } catch {
-    return false;
-  }
-}
-
 function getSesClient(): SESClient | null {
   if (!MARKETING_SHARE_EMAIL_ENABLED) return null;
-
-  // Fail CLOSED unless explicitly configured.
   if (!SES_FROM || !isValidEmail(SES_FROM)) return null;
   if (!AWS_REGION) return null;
   if (!AWS_ACCESS_KEY_ID || !AWS_SECRET_ACCESS_KEY) return null;
@@ -52,8 +33,6 @@ function getSesClient(): SESClient | null {
     },
   });
 }
-
-/* ---------------- Rate limiting ---------------- */
 
 const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW = 60_000;
@@ -78,14 +57,12 @@ function getClientKey(req: NextRequest): string {
   );
 }
 
-/* ---------------- Handler ---------------- */
-
 export async function POST(request: NextRequest) {
   const clientKey = getClientKey(request);
 
   if (isRateLimited(clientKey)) {
     return NextResponse.json(
-      { ok: false, error: "Rate limited" },
+      { error: "rate_limited" },
       { status: 429 },
     );
   }
@@ -95,66 +72,60 @@ export async function POST(request: NextRequest) {
     body = await request.json();
   } catch {
     return NextResponse.json(
-      { ok: false, error: "Invalid JSON" },
+      { error: "Invalid JSON" },
       { status: 400 },
     );
   }
 
-  const email = typeof body.email === "string" ? body.email.trim() : "";
-  const summary = body.summary;
+  const toEmail = typeof body.to_email === "string" ? body.to_email.trim() : "";
+  const shareSummary = body.shareSummary;
 
-  if (!email || !isValidEmail(email)) {
+  if (!toEmail || !isValidEmail(toEmail)) {
     return NextResponse.json(
-      { ok: false, error: "Valid email required" },
+      { error: "Valid to_email required" },
       { status: 400 },
     );
   }
-  if (summary === undefined) {
+  if (shareSummary === undefined) {
     return NextResponse.json(
-      { ok: false, error: "Summary required" },
+      { error: "shareSummary required" },
       { status: 400 },
     );
   }
+
+  const shareToken = crypto.randomUUID();
 
   const ses = getSesClient();
 
-  // Fail closed until email provider is fully configured.
   if (!ses) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error:
-          "Sharing is not configured yet. Please use Save & Continue to resume in the app.",
-      },
-      { status: 501 },
+    console.log(
+      `[share] email disabled — token=${shareToken}, to=${toEmail}`,
     );
+    return NextResponse.json({ share_token: shareToken });
   }
 
-  // Validate continue URL (fail closed to safe default)
-  const continueUrl = isValidUrl(SHARE_CONTINUE_URL)
-    ? SHARE_CONTINUE_URL
-    : "https://app.fractpath.com";
+  const magicLink = `${FRACTPATH_BASE_URL}/calculator?share=${shareToken}`;
 
   try {
-    // Explicitly treat summary as opaque (accepted but not inspected).
-    void summary;
+    void shareSummary;
 
     await ses.send(
       new SendEmailCommand({
         Source: SES_FROM,
-        Destination: { ToAddresses: [email] },
+        Destination: { ToAddresses: [toEmail] },
         Message: {
           Subject: {
-            Data: "Your FractPath scenario is ready",
+            Data: "Someone shared a FractPath scenario with you",
             Charset: "UTF-8",
           },
           Body: {
             Text: {
               Data:
-                "You were shared a FractPath scenario.\n\n" +
-                "To view it and continue:\n" +
-                `${continueUrl}\n\n` +
-                "If you didn’t request this, you can ignore this email.\n\n" +
+                "You've been shared an illustrative FractPath scenario.\n\n" +
+                "This is a non-binding estimate for informational purposes only.\n\n" +
+                "View the scenario:\n" +
+                `${magicLink}\n\n` +
+                "If you didn't expect this, you can safely ignore this email.\n\n" +
                 "— FractPath\n",
               Charset: "UTF-8",
             },
@@ -164,11 +135,11 @@ export async function POST(request: NextRequest) {
       }),
     );
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ share_token: shareToken });
   } catch (err) {
     console.error("[share] SES send failed", err);
     return NextResponse.json(
-      { ok: false, error: "Email delivery failed" },
+      { error: "Email delivery failed" },
       { status: 500 },
     );
   }

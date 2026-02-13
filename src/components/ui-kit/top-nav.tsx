@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Container } from "./container";
 import { Menu, X } from "lucide-react";
+import { trackCustomEvent } from "@/lib/analytics";
 
 const navLinks = [
   { label: "How It Works", href: "#how-it-works" },
@@ -39,9 +40,21 @@ export function TopNav() {
                 {link.label}
               </a>
             ))}
-            <a href="https://app.fractpath.com/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Login</a>
+            <a
+              href="https://app.fractpath.com/login"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Login
+            </a>
             <Button asChild size="sm">
-              <a href="https://app.fractpath.com/signup">Sign up</a>
+              <a
+                href="https://app.fractpath.com/signup"
+                onClick={() =>
+                  trackCustomEvent("cta_signup_clicked", { location: "nav" })
+                }
+              >
+                Sign up
+              </a>
             </Button>
           </div>
 
@@ -67,9 +80,21 @@ export function TopNav() {
                   {link.label}
                 </a>
               ))}
-              <a href="https://app.fractpath.com/login" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">Login</a>
+              <a
+                href="https://app.fractpath.com/login"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Login
+              </a>
               <Button asChild size="sm" className="w-fit">
-                <a href="https://app.fractpath.com/signup">Sign up</a>
+                <a
+                  href="https://app.fractpath.com/signup"
+                  onClick={() =>
+                    trackCustomEvent("cta_signup_clicked", { location: "nav" })
+                  }
+                >
+                  Sign up
+                </a>
               </Button>
             </div>
           </div>

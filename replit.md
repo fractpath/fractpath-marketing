@@ -8,26 +8,30 @@ FractPath marketing homepage - a Next.js application for fractional real estate 
 /src
   /app
     layout.tsx         - Root layout with fonts and Toaster
-    page.tsx           - Main homepage with all marketing sections + widget embed
+    page.tsx           - Main homepage with static sections + PersonaPageContent
     globals.css        - Tailwind CSS imports and shadcn/ui variables
     /api
-      /lead/route.ts   - POST /api/lead — email gate, persona, draftSnapshot → resume_token
-      /share/route.ts  - POST /api/share — forward ShareSummary for email send
+      /lead/route.ts   - POST /api/lead — { email, persona, draftSnapshot } → { resume_token }
+      /share/route.ts  - POST /api/share — { to_email, shareSummary } → { share_token }
   /components
     /ui                - shadcn/ui components (Button, Card, Input, Dialog, etc.)
-    /ui-kit            - Custom layout primitives (Container, Section, TopNav, etc.)
-    calculator-embed.tsx - Widget embed wrapper with persona selector, email gate + error boundary
+    /ui-kit            - Custom layout primitives (Container, Section, TopNav, Footer, etc.)
+    calculator-embed.tsx - Widget embed with persona tabs, Save & Continue modal, Share modal, error boundary
+    persona-page-content.tsx - Client component wrapping persona-dependent page sections (hero, calculator, value props, trust)
+  /content
+    personas.ts        - Persona content system (hero copy, value props, calculator labels, trust bullets per persona)
   /lib
     utils.ts           - cn() utility for class merging
-    analytics.ts       - Analytics event tracking (Plausible-compatible): persona_selected, lead_email_submitted, widget events
+    analytics.ts       - Analytics event tracking (Plausible-compatible): persona_selected, lead_email_submitted, cta_signup_clicked, cta_contact_clicked, widget events
   /types
     fractpath-calculator-widget.d.ts - Ambient type declarations mirroring real widget API
 /public
   /brand               - Logo assets (SVG)
 /docs
   /migration           - Widget migration boundary docs
-  /tickets             - Feature tickets
+  /tickets             - Feature tickets + WGT-030-supplement.md
 /fractpath-calculator-widget-src  - Widget source checkout (excluded from tsc)
+/fractpath-calculator-widget-pack - Widget tarball package
 /fractpath-marketing              - Old subdir (excluded from tsc, legacy)
 ```
 
@@ -44,22 +48,35 @@ FractPath marketing homepage - a Next.js application for fractional real estate 
 - Marketing does NOT contain calculator math — widget is canonical source of truth
 - Widget provides: FractPathCalculatorWidget component, DraftSnapshot, ShareSummary, WidgetEvent types
 - Widget requires `persona` prop (CalculatorPersona: homeowner | buyer | realtor | investor | ops)
-- Marketing provides: persona selector UI, email gate UI, /api/lead route, /api/share route, analytics wiring
+- Marketing provides: persona selector UI, email gate UI, share modal, /api/lead route, /api/share route, analytics wiring
+
+## Persona Content System
+- `src/content/personas.ts` defines persona-specific copy for 3 personas: homeowner, buyer, realtor
+- Each persona has: hero (eyebrow, headline, subheadline, CTAs), value props (3), calculator section header, trust bullets (3)
+- `PersonaPageContent` client component wraps persona-dependent sections and syncs state with CalculatorEmbed
+- Static sections (How It Works, FAQ, Realtor Beta) remain server-rendered in page.tsx
 
 ## API Routes
 - **POST /api/lead**: Receives { email, persona, draftSnapshot }, validates persona + snapshot structure, rejects full-only fields, HubSpot upsert as non-blocking side effect, returns { resume_token }
-- **POST /api/share**: Receives { email, summary }, forwards to SES for branded email send (requires SES configuration)
+- **POST /api/share**: Receives { to_email, shareSummary }, generates opaque share_token, sends branded email via SES if configured, returns { share_token }
 
 ## Key Flows
-1. **Persona Selection**: User clicks Homeowner/Buyer/Realtor tab → updates widget persona prop → tracks persona_selected event
+1. **Persona Selection**: User clicks Homeowner/Buyer/Realtor tab → updates widget persona prop + page content → tracks persona_selected event
 2. **Save & Continue**: Widget emits onDraftSnapshot → email gate UI → POST /api/lead with { email, persona, draftSnapshot } → receive resume_token
-3. **Share**: Widget emits onShareSummary → email prompt → POST /api/share → confirmation
+3. **Share**: Widget emits onShareSummary → share email modal → POST /api/share with { to_email, shareSummary } → receive share_token
+
+## Analytics Events (MKT-011)
+- `persona_selected` — { persona }
+- `lead_email_submitted` — { persona }
+- `cta_signup_clicked` — { location: "nav" | "hero" }
+- `cta_contact_clicked` — { location: "footer" }
+- Widget events forwarded via onEvent: calculator_used, share_clicked, save_continue_clicked, save_clicked
 
 ## Development
 - Run `npm run dev` to start the development server on port 5000
 - Frontend binds to `0.0.0.0:5000`
 - next.config.ts uses wildcard `*.replit.dev` and `*.repl.co` for allowedDevOrigins
-- tsconfig.json excludes `fractpath-calculator-widget-src` and `fractpath-marketing` directories
+- tsconfig.json excludes `fractpath-calculator-widget-src`, `fractpath-marketing` directories
 
 ## Rebuilding Widget Tarball
 If the upstream widget changes, rebuild the tarball:
@@ -72,6 +89,7 @@ If the upstream widget changes, rebuild the tarball:
 
 ## Environment Variables
 - `FRACTPATH_APP_URL` — Base URL for the FractPath app (default: https://app.fractpath.com)
+- `FRACTPATH_BASE_URL` — Base URL for marketing share links (default: https://fractpath.com)
 - `HUBSPOT_ACCESS_TOKEN` — (Secret) For lead CRM upsert (non-blocking side effect)
 - `HUBSPOT_ENABLED` — Set to "true" to enable HubSpot upsert
 - `MARKETING_SHARE_EMAIL_ENABLED` — Set to "true" to enable SES email sharing
@@ -82,8 +100,12 @@ If the upstream widget changes, rebuild the tarball:
 - Investor-presentable quality
 - Clear disclaimers: "scenario modeling," "estimates," "not financial advice"
 - No calculator math in marketing repo
+- One step at a time — complete and verify before moving to next
+- No invention — all inputs, outputs, labels, events must come from tickets
+- Preserve marketing → app snapshot contract
 
 ## Recent Changes
+- 2026-02-13: Implemented persona content system (MKT-003), wired hero/value props/trust to persona selection, added onShareSummary flow with share email modal, aligned /api/share with MKT-006 contract ({ to_email, shareSummary } → { share_token }), added cta_signup_clicked and cta_contact_clicked analytics (MKT-011), added footer privacy note, created WGT-030-supplement.md documenting gaps
 - 2026-02-13: Aligned type declarations with real widget API, added persona selector (Homeowner/Buyer/Realtor), wired onDraftSnapshot for Save & Continue flow, updated /api/lead to accept { email, persona, draftSnapshot }, enhanced analytics with persona_selected/lead_email_submitted events, fixed next.config allowedDevOrigins, excluded stale subdirs from tsconfig
 - 2026-02-09: Sprint 5 — Embedded widget, email gate, /api/lead, /api/share, analytics
 - 2026-02-06: MKT-A — Migration docs declaring widget as calculator source of truth

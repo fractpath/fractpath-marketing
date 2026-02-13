@@ -1,0 +1,28 @@
+npm verbose cli /nix/store/jfar9wnj6kvr0gr6klh1gk7vgckkfr5j-nodejs-20.20.0/bin/node /nix/store/jfar9wnj6kvr0gr6klh1gk7vgckkfr5j-nodejs-20.20.0/bin/npm
+npm info using npm@10.8.2
+npm info using node@v20.20.0
+npm verbose title npm ci
+npm verbose argv "ci" "--no-audit" "--no-fund" "--progress" "false" "--foreground-scripts" "--loglevel" "verbose"
+npm verbose logfile logs-max:10 dir:/home/runner/.npm/_logs/2026-02-13T04_11_23_732Z-
+npm verbose logfile /home/runner/.npm/_logs/2026-02-13T04_11_23_732Z-debug-0.log
+npm http fetch GET 200 https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/d60b9d39f166d19b67c03b9a5615de0169c282a0 202ms (cache revalidated)
+npm verbose stack Error: Unsupported URL Type "workspace:": workspace:*
+npm verbose stack     at unsupportedURLType (/nix/store/jfar9wnj6kvr0gr6klh1gk7vgckkfr5j-nodejs-20.20.0/lib/node_modules/npm/node_modules/npm-package-arg/lib/npa.js:310:15)
+npm verbose stack     at fromURL (/nix/store/jfar9wnj6kvr0gr6klh1gk7vgckkfr5j-nodejs-20.20.0/lib/node_modules/npm/node_modules/npm-package-arg/lib/npa.js:367:13)
+npm verbose stack     at Function.resolve (/nix/store/jfar9wnj6kvr0gr6klh1gk7vgckkfr5j-nodejs-20.20.0/lib/node_modules/npm/node_modules/npm-package-arg/lib/npa.js:83:12)
+npm verbose stack     at /nix/store/jfar9wnj6kvr0gr6klh1gk7vgckkfr5j-nodejs-20.20.0/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:1008:39
+npm verbose stack     at run (/nix/store/jfar9wnj6kvr0gr6klh1gk7vgckkfr5j-nodejs-20.20.0/lib/node_modules/npm/node_modules/promise-call-limit/dist/commonjs/index.js:67:22)
+npm verbose stack     at /nix/store/jfar9wnj6kvr0gr6klh1gk7vgckkfr5j-nodejs-20.20.0/lib/node_modules/npm/node_modules/promise-call-limit/dist/commonjs/index.js:84:9
+npm verbose stack     at new Promise (<anonymous>)
+npm verbose stack     at callLimit (/nix/store/jfar9wnj6kvr0gr6klh1gk7vgckkfr5j-nodejs-20.20.0/lib/node_modules/npm/node_modules/promise-call-limit/dist/commonjs/index.js:35:69)
+npm verbose stack     at #buildDepStep (/nix/store/jfar9wnj6kvr0gr6klh1gk7vgckkfr5j-nodejs-20.20.0/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:1022:11)
+npm verbose stack     at async Arborist.buildIdealTree (/nix/store/jfar9wnj6kvr0gr6klh1gk7vgckkfr5j-nodejs-20.20.0/lib/node_modules/npm/node_modules/@npmcli/arborist/lib/arborist/build-ideal-tree.js:181:7)
+npm error code EUNSUPPORTEDPROTOCOL
+npm error Unsupported URL Type "workspace:": workspace:*
+npm verbose cwd /home/runner/workspace
+npm verbose os Linux 6.14.11
+npm verbose node v20.20.0
+npm verbose npm  v10.8.2
+npm verbose exit 1
+npm verbose code 1
+npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-02-13T04_11_23_732Z-debug-0.log

@@ -63,6 +63,8 @@ Per MKT-011 and WGT-031:
 - Request: `{ email: string, persona: "homeowner"|"buyer"|"realtor", draftSnapshot: object }`
 - Response (200): `{ resume_token: string }`
 - Error responses: `{ error: string }` with appropriate HTTP status
+- `draftSnapshot` may include `input_hash` and `output_hash` (integrity hashes emitted by the widget in marketing mode); these are accepted
+- `draftSnapshot` with `full_results` or `settlements` keys is rejected (HTTP 422) — those are app-mode-only fields
 
 ### POST /api/share
 - Request: `{ to_email: string, shareSummary: object }`

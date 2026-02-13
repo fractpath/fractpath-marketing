@@ -35,8 +35,6 @@ const REQUIRED_SNAPSHOT_KEYS = [
 ] as const;
 
 const FULL_ONLY_KEYS = [
-  "output_hash",
-  "input_hash",
   "full_results",
   "settlements",
 ] as const;

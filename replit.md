@@ -105,6 +105,7 @@ If the upstream widget changes, rebuild the tarball:
 - Preserve marketing → app snapshot contract
 
 ## Recent Changes
+- 2026-02-13: Fixed /api/lead rejecting widget draftSnapshot — removed input_hash and output_hash from FULL_ONLY_KEYS (they are integrity hashes emitted in marketing mode, not app-only fields). Verified all flows end-to-end.
 - 2026-02-13: Fixed persona scope per WGT-030 guardrails — hero, value props, trust are now static; only calculator area (below tabs) changes with persona. Added console logging to Save & Continue and Share flows for preview debugging. Updated WGT-030-supplement.md.
 - 2026-02-13: Implemented persona content system (MKT-003), wired onShareSummary flow with share email modal, aligned /api/share with MKT-006 contract ({ to_email, shareSummary } → { share_token }), added cta_signup_clicked and cta_contact_clicked analytics (MKT-011), added footer privacy note, created WGT-030-supplement.md documenting gaps
 - 2026-02-13: Aligned type declarations with real widget API, added persona selector (Homeowner/Buyer/Realtor), wired onDraftSnapshot for Save & Continue flow, updated /api/lead to accept { email, persona, draftSnapshot }, enhanced analytics with persona_selected/lead_email_submitted events, fixed next.config allowedDevOrigins, excluded stale subdirs from tsconfig

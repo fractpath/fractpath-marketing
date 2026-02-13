@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npx next dev --hostname 0.0.0.0 --port 3000",
-    "build": "npx next build",
-    "start": "npx next start",
+    "dev": "next dev --hostname 0.0.0.0 --port $PORT",
+    "build": "next build",
+    "start": "next start",
     "lint": "eslint"
   },
   "dependencies": {

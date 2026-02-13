@@ -6,8 +6,12 @@ import { COMPUTE_VERSION } from "./version.js";
 export function computeDeal(
   terms: DealTerms,
   assumptions: ScenarioAssumptions,
-  nowIso?: string,
+  nowIso: string,
 ): DealResults {
+  if (!nowIso || typeof nowIso !== "string" || nowIso.trim().length < 10) {
+    throw new Error("nowIso is required for deterministic compute");
+  }
+
   const {
     iba_usd,
     floor_multiple,
@@ -74,7 +78,7 @@ export function computeDeal(
 
   return {
     compute_version: COMPUTE_VERSION,
-    computed_at: nowIso ?? new Date().toISOString(),
+    computed_at: nowIso,
     inputs: terms,
     assumptions,
     outputs: {

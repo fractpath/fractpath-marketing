@@ -268,12 +268,8 @@ describe("computeDeal", () => {
     ).toThrow("iba_usd must be > 0");
   });
 
-  it("uses current time when nowIso not provided", () => {
-    const before = new Date().toISOString();
-    const result = computeDeal(makeTerms(), makeAssumptions());
-    const after = new Date().toISOString();
-
-    expect(result.computed_at >= before).toBe(true);
-    expect(result.computed_at <= after).toBe(true);
+  it("throws when nowIso is not provided (deterministic core)", () => {
+    // @ts-expect-error - nowIso is required by design
+    expect(() => computeDeal(makeTerms(), makeAssumptions())).toThrow(/nowIso is required/i);
   });
 });

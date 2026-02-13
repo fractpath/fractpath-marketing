@@ -8,22 +8,22 @@ This document records implementation decisions, gaps, and clarifications for ite
 
 ---
 
-## Persona-Specific Inputs
+## Persona-Specific Inputs & Outputs (Widget-Owned)
 
-**Decision**: The widget (not marketing) owns all persona-specific input rendering, labels, and conditional visibility. Marketing only sets the `persona` prop on `FractPathCalculatorWidget`.
+**Decision**: The widget (not marketing) owns all persona-specific input rendering, labels, outputs, and conditional visibility. Marketing only sets the `persona` prop on `FractPathCalculatorWidget`.
 
 Per MKT-INT-001:
 > "Marketing must NOT introduce persona logic beyond setting widget props."
 
-Marketing does not conditionally show/hide calculator inputs. If persona-specific input behavior is needed, it must be implemented in the widget package.
+Marketing does not conditionally show/hide calculator inputs or outputs. When the user switches persona tabs, only the calculator area (below the tab controller) updates — the widget re-renders with the new `persona` prop. Hero copy and all other page sections remain static and unchanged.
 
 ---
 
-## Persona-Specific Value Props (Marketing-Owned)
+## Static Page Content
 
-Marketing owns persona-specific page content (hero copy, value propositions, trust bullets) via `src/content/personas.ts`. This content system is independent of the widget and changes when the user selects a persona tab.
+Hero copy, value propositions, and trust bullets are static — they do NOT change when persona tabs are switched. Only the calculator section (persona tabs + widget) is persona-adaptive.
 
-Content is sourced from MKT-003 persona content system requirements.
+Persona-specific content definitions remain available in `src/content/personas.ts` for potential future use (e.g., persona-specific landing pages via `?persona=buyer` query param), but the main homepage uses universal static copy.
 
 ---
 

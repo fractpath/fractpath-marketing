@@ -95,8 +95,10 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
         const data = await res.json();
 
         if (data.resume_token) {
+          console.log("[save-continue] success: resume_token received", { persona, email });
           setGate({ step: "save_done" });
         } else {
+          console.warn("[save-continue] failure:", data.error || "unknown error", { persona, email });
           setGate({
             step: "save_error",
             message: data.error || "Something went wrong. Please try again.",
@@ -104,7 +106,8 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
             email,
           });
         }
-      } catch {
+      } catch (err) {
+        console.error("[save-continue] network error:", err);
         setGate({
           step: "save_error",
           message: "Network error. Please check your connection and try again.",
@@ -140,8 +143,10 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
         const data = await res.json();
 
         if (data.share_token || data.ok) {
+          console.log("[share] success: share_token received", { to_email: email });
           setGate({ step: "share_done" });
         } else {
+          console.warn("[share] failure:", data.error || "unknown error", { to_email: email });
           setGate({
             step: "share_error",
             message: data.error || "Something went wrong. Please try again.",
@@ -149,7 +154,8 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
             email,
           });
         }
-      } catch {
+      } catch (err) {
+        console.error("[share] network error:", err);
         setGate({
           step: "share_error",
           message: "Network error. Please check your connection and try again.",

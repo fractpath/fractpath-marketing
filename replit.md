@@ -51,10 +51,10 @@ FractPath marketing homepage - a Next.js application for fractional real estate 
 - Marketing provides: persona selector UI, email gate UI, share modal, /api/lead route, /api/share route, analytics wiring
 
 ## Persona Content System
-- `src/content/personas.ts` defines persona-specific copy for 3 personas: homeowner, buyer, realtor
-- Each persona has: hero (eyebrow, headline, subheadline, CTAs), value props (3), calculator section header, trust bullets (3)
-- `PersonaPageContent` client component wraps persona-dependent sections and syncs state with CalculatorEmbed
-- Static sections (How It Works, FAQ, Realtor Beta) remain server-rendered in page.tsx
+- `src/content/personas.ts` defines persona-specific copy for 3 personas: homeowner, buyer, realtor (retained for future persona-specific landing pages)
+- Hero, value props, and trust sections are **static** — they do NOT change when persona tabs are switched
+- `PersonaPageContent` client component wraps only the calculator section (persona tabs + widget embed)
+- Persona tabs only affect the calculator area below the tab controller; all other page sections are server-rendered and static
 
 ## API Routes
 - **POST /api/lead**: Receives { email, persona, draftSnapshot }, validates persona + snapshot structure, rejects full-only fields, HubSpot upsert as non-blocking side effect, returns { resume_token }
@@ -105,7 +105,8 @@ If the upstream widget changes, rebuild the tarball:
 - Preserve marketing → app snapshot contract
 
 ## Recent Changes
-- 2026-02-13: Implemented persona content system (MKT-003), wired hero/value props/trust to persona selection, added onShareSummary flow with share email modal, aligned /api/share with MKT-006 contract ({ to_email, shareSummary } → { share_token }), added cta_signup_clicked and cta_contact_clicked analytics (MKT-011), added footer privacy note, created WGT-030-supplement.md documenting gaps
+- 2026-02-13: Fixed persona scope per WGT-030 guardrails — hero, value props, trust are now static; only calculator area (below tabs) changes with persona. Added console logging to Save & Continue and Share flows for preview debugging. Updated WGT-030-supplement.md.
+- 2026-02-13: Implemented persona content system (MKT-003), wired onShareSummary flow with share email modal, aligned /api/share with MKT-006 contract ({ to_email, shareSummary } → { share_token }), added cta_signup_clicked and cta_contact_clicked analytics (MKT-011), added footer privacy note, created WGT-030-supplement.md documenting gaps
 - 2026-02-13: Aligned type declarations with real widget API, added persona selector (Homeowner/Buyer/Realtor), wired onDraftSnapshot for Save & Continue flow, updated /api/lead to accept { email, persona, draftSnapshot }, enhanced analytics with persona_selected/lead_email_submitted events, fixed next.config allowedDevOrigins, excluded stale subdirs from tsconfig
 - 2026-02-09: Sprint 5 — Embedded widget, email gate, /api/lead, /api/share, analytics
 - 2026-02-06: MKT-A — Migration docs declaring widget as calculator source of truth

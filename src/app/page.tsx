@@ -7,14 +7,64 @@ import {
   Footer,
 } from "@/components/ui-kit";
 import { PersonaPageContent } from "@/components/persona-page-content";
-import { BarChart3, Handshake, FileCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { HeroCta } from "@/components/hero-cta";
+import { BarChart3, Handshake, FileCheck, Home, Key, Users, Shield, Scale, Eye } from "lucide-react";
 
 export default function HomePage() {
   return (
     <div id="top" className="min-h-screen">
       <TopNav />
 
+      <Section className="bg-gradient-to-b from-background to-muted/30 pt-20 sm:pt-28 lg:pt-32">
+        <Container>
+          <div className="mx-auto max-w-3xl text-center">
+            <Badge variant="secondary" className="mb-4">
+              Fractional Equity Scenario Modeling
+            </Badge>
+
+            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+              Model Your Path to Equity
+            </h1>
+
+            <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
+              See how fractional ownership could work for your property, your
+              investment, or your clients &mdash; all estimates, no obligations.
+            </p>
+
+            <HeroCta />
+          </div>
+        </Container>
+      </Section>
+
       <PersonaPageContent />
+
+      <Section>
+        <Container>
+          <PageHeader
+            eyebrow="Why FractPath"
+            title="Built for Every Side of the Table"
+            subtitle="Whether you own, want to own, or help others own &mdash; FractPath models the possibilities."
+          />
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <FeatureCard
+              icon={Home}
+              title="No Loans Required"
+              body="Access a portion of your home equity without taking on debt, monthly payments, or interest charges."
+            />
+            <FeatureCard
+              icon={Key}
+              title="Build Equity Over Time"
+              body="Model how monthly contributions can build ownership in a property. See projected equity growth and payoff scenarios."
+            />
+            <FeatureCard
+              icon={Users}
+              title="Referral Opportunities"
+              body="Realtors can model referral commissions through fractional equity transactions and offer clients a new option."
+            />
+          </div>
+        </Container>
+      </Section>
 
       <Section id="how-it-works" className="bg-muted/30">
         <Container>
@@ -39,6 +89,46 @@ export default function HomePage() {
               title="3. Execute"
               body="All agreements are executed through vetted legal processes. Manual-first operations ensure transparency and compliance at every step."
             />
+          </div>
+        </Container>
+      </Section>
+
+      <Section>
+        <Container>
+          <PageHeader
+            eyebrow="Trust &amp; Compliance"
+            title="Transparent by Design"
+            subtitle="FractPath is built with transparency, auditability, and manual-first operations at its core."
+          />
+          <div className="grid gap-6 sm:grid-cols-3">
+            <FeatureCard
+              icon={Shield}
+              title="No Hidden Fees"
+              body="No hidden fees — all terms disclosed upfront in every scenario."
+            />
+            <FeatureCard
+              icon={Scale}
+              title="Legal Compliance"
+              body="All agreements executed through vetted legal processes and state regulatory frameworks."
+            />
+            <FeatureCard
+              icon={Eye}
+              title="Auditability"
+              body="Every calculation is deterministic and reproducible. Verify every number."
+            />
+          </div>
+
+          <div className="mt-8 rounded-2xl border bg-muted/50 p-6 text-center">
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              <strong>Disclaimer:</strong> FractPath provides scenario modeling
+              tools for informational purposes only. Outputs are estimates and
+              do not constitute financial, legal, or investment advice. All
+              scenarios are subject to change based on market conditions, legal
+              requirements, and other factors. FractPath does not guarantee any
+              returns or outcomes. Past performance is not indicative of future
+              results. Consult with qualified professionals before making
+              financial decisions.
+            </p>
           </div>
         </Container>
       </Section>

@@ -1,11 +1,14 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import { FractPathCalculatorWidget } from "fractpath-calculator-widget";
-import type {
-  LiteShareSummaryV1,
-  WidgetEvent,
+import { useCallback, useState, type FormEvent } from "react";
+import { Component, type ErrorInfo, type ReactNode } from "react";
+import {
+  FractPathCalculatorWidget,
+  type LiteShareSummaryV1,
+  // If WidgetEvent is a stable export, keep this. Otherwise, use `unknown` below.
+  type WidgetEvent,
 } from "fractpath-calculator-widget";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,7 +20,12 @@ type GateState =
   | { step: "email_gate"; snapshot: LiteShareSummaryV1 }
   | { step: "submitting"; snapshot: LiteShareSummaryV1; email: string }
   | { step: "saved" }
-  | { step: "error"; message: string; snapshot: LiteShareSummaryV1; email: string };
+  | {
+      step: "error";
+      message: string;
+      snapshot: LiteShareSummaryV1;
+      email: string;
+    };
 
 export function CalculatorEmbed() {
   const [gate, setGate] = useState<GateState>({ step: "idle" });
@@ -30,12 +38,14 @@ export function CalculatorEmbed() {
     trackCustomEvent("lite_snapshot_received");
   }, []);
 
-  const handleEvent = useCallback((event: WidgetEvent) => {
+  // If WidgetEvent is not guaranteed stable, switch param type to `unknown`
+  // and let trackEvent handle validation internally.
+  const handleEvent = useCallback((event: unknown) => {
     trackEvent(event);
   }, []);
 
   const handleEmailSubmit = useCallback(
-    async (e: React.FormEvent) => {
+    async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       if (gate.step !== "email_gate") return;
 
@@ -149,7 +159,9 @@ export function CalculatorEmbed() {
         <Card className="mx-auto max-w-md rounded-2xl">
           <CardContent className="flex items-center justify-center gap-3 p-6">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="text-sm text-muted-foreground">Saving your scenario...</p>
+            <p className="text-sm text-muted-foreground">
+              Saving your scenario...
+            </p>
           </CardContent>
         </Card>
       )}
@@ -180,7 +192,9 @@ export function CalculatorEmbed() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setGate({ step: "email_gate", snapshot: gate.snapshot })}
+                onClick={() =>
+                  setGate({ step: "email_gate", snapshot: gate.snapshot })
+                }
               >
                 Try Again
               </Button>
@@ -199,8 +213,6 @@ export function CalculatorEmbed() {
   );
 }
 
-import { Component, type ReactNode, type ErrorInfo } from "react";
-
 type ErrorBoundaryProps = {
   children: ReactNode;
   onError: () => void;
@@ -210,7 +222,10 @@ type ErrorBoundaryState = {
   hasError: boolean;
 };
 
-class WidgetErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class WidgetErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
@@ -225,9 +240,7 @@ class WidgetErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   render() {
-    if (this.state.hasError) {
-      return null;
-    }
+    if (this.state.hasError) return null;
     return this.props.children;
   }
 }

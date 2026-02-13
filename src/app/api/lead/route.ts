@@ -4,6 +4,10 @@ const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
 const HUBSPOT_ENABLED =
   (process.env.HUBSPOT_ENABLED || "").toLowerCase() === "true";
 
+const FRACTPATH_APP_URL = (
+  process.env.FRACTPATH_APP_URL || "https://app.fractpath.com"
+).trim();
+
 const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW = 60_000;
 const RATE_LIMIT_MAX = 10;
@@ -19,7 +23,9 @@ function isRateLimited(ip: string): boolean {
   return entry.count > RATE_LIMIT_MAX;
 }
 
-const REQUIRED_LITE_KEYS = [
+const VALID_PERSONAS = ["homeowner", "buyer", "realtor"] as const;
+
+const REQUIRED_SNAPSHOT_KEYS = [
   "contract_version",
   "schema_version",
   "created_at",
@@ -35,15 +41,14 @@ const FULL_ONLY_KEYS = [
   "settlements",
 ] as const;
 
-function isLitePayload(
+function isValidDraftSnapshot(
   snapshot: unknown,
 ): snapshot is Record<string, unknown> {
   if (typeof snapshot !== "object" || snapshot === null || Array.isArray(snapshot)) {
     return false;
   }
   const obj = snapshot as Record<string, unknown>;
-
-  for (const key of REQUIRED_LITE_KEYS) {
+  for (const key of REQUIRED_SNAPSHOT_KEYS) {
     if (!(key in obj) || obj[key] === undefined) {
       return false;
     }
@@ -55,24 +60,6 @@ function containsFullOnlyKeys(snapshot: Record<string, unknown>): boolean {
   for (const key of FULL_ONLY_KEYS) {
     if (key in snapshot) return true;
   }
-
-  if (
-    typeof snapshot.outputs === "object" &&
-    snapshot.outputs !== null &&
-    "settlements" in (snapshot.outputs as Record<string, unknown>)
-  ) {
-    const settlements = (snapshot.outputs as Record<string, unknown>).settlements;
-    if (typeof settlements === "object" && settlements !== null) {
-      const std = (settlements as Record<string, unknown>).standard;
-      if (typeof std === "object" && std !== null) {
-        const stdObj = std as Record<string, unknown>;
-        if ("raw_payout" in stdObj || "transfer_fee" in stdObj || "clamp" in stdObj) {
-          return true;
-        }
-      }
-    }
-  }
-
   return false;
 }
 
@@ -148,7 +135,7 @@ export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
   if (isRateLimited(ip)) {
     return NextResponse.json(
-      { ok: false, error: "Rate limited" },
+      { error: "rate_limited" },
       { status: 429 },
     );
   }
@@ -158,52 +145,59 @@ export async function POST(request: NextRequest) {
     body = await request.json();
   } catch {
     return NextResponse.json(
-      { ok: false, error: "Invalid JSON" },
+      { error: "Invalid JSON" },
       { status: 400 },
     );
   }
 
   const email = typeof body.email === "string" ? body.email.trim() : "";
-  const snapshot = body.snapshot;
+  const persona = typeof body.persona === "string" ? body.persona.trim() : "";
+  const draftSnapshot = body.draftSnapshot;
 
   if (!email || !email.includes("@")) {
     return NextResponse.json(
-      { ok: false, error: "Valid email required" },
-      { status: 400 },
-    );
-  }
-  if (snapshot === undefined) {
-    return NextResponse.json(
-      { ok: false, error: "Snapshot required" },
+      { error: "Valid email required" },
       { status: 400 },
     );
   }
 
-  if (!isLitePayload(snapshot)) {
+  if (!persona || !VALID_PERSONAS.includes(persona as typeof VALID_PERSONAS[number])) {
     return NextResponse.json(
-      { ok: false, error: "Invalid snapshot: missing required V1 lite fields" },
+      { error: "Valid persona required (homeowner, buyer, or realtor)" },
+      { status: 400 },
+    );
+  }
+
+  if (draftSnapshot === undefined) {
+    return NextResponse.json(
+      { error: "draftSnapshot required" },
+      { status: 400 },
+    );
+  }
+
+  if (!isValidDraftSnapshot(draftSnapshot)) {
+    return NextResponse.json(
+      { error: "Invalid draftSnapshot: missing required fields" },
       { status: 422 },
     );
   }
 
-  if (containsFullOnlyKeys(snapshot)) {
+  if (containsFullOnlyKeys(draftSnapshot)) {
     return NextResponse.json(
-      { ok: false, error: "Rejected: payload contains full-only fields" },
+      { error: "Rejected: payload contains full-only fields" },
       { status: 422 },
     );
   }
 
-  const snapshotJson = JSON.stringify(snapshot);
-  const persona =
-    typeof snapshot.persona === "string" && snapshot.persona.trim()
-      ? snapshot.persona.trim()
-      : "unknown";
+  const snapshotJson = JSON.stringify(draftSnapshot);
 
   hubspotUpsert(email, snapshotJson, persona).catch(() => {});
 
+  const resumeToken = crypto.randomUUID();
+
   console.log(
-    `[lead] captured: email=${email}, persona=${persona}, contract_version=${String(snapshot.contract_version)}`,
+    `[lead] captured: email=${email}, persona=${persona}, contract_version=${String(draftSnapshot.contract_version)}, token=${resumeToken}`,
   );
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ resume_token: resumeToken });
 }

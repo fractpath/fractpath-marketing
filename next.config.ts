@@ -1,19 +1,21 @@
 import type { NextConfig } from "next";
 
-const allowedOrigins: string[] = [];
+const allowedOrigins: string[] = [
+  "http://127.0.0.1:5000",
+  "http://localhost:5000",
+  "http://0.0.0.0:5000",
+];
 if (process.env.REPLIT_DEV_DOMAIN) {
   allowedOrigins.push(`https://${process.env.REPLIT_DEV_DOMAIN}`);
-  allowedOrigins.push(`https://${process.env.REPLIT_DEV_DOMAIN}:5000`);
 }
 if (process.env.REPLIT_DOMAINS) {
-  allowedOrigins.push(`https://${process.env.REPLIT_DOMAINS}`);
+  process.env.REPLIT_DOMAINS.split(",").forEach((d) => {
+    allowedOrigins.push(`https://${d.trim()}`);
+  });
 }
-allowedOrigins.push("http://127.0.0.1:5000");
-allowedOrigins.push("http://localhost:5000");
-allowedOrigins.push("http://0.0.0.0:5000");
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: allowedOrigins,
+  allowedDevOrigins: ["*.replit.dev", "*.repl.co", ...allowedOrigins],
   transpilePackages: ["fractpath-calculator-widget"],
 };
 

@@ -4,7 +4,8 @@ import { useCallback, useState, type FormEvent } from "react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import {
   FractPathCalculatorWidget,
-  type ShareSummary,
+  type CalculatorPersona,
+  type DraftSnapshot,
   type WidgetEvent,
 } from "fractpath-calculator-widget";
 
@@ -12,27 +13,42 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { trackEvent, trackCustomEvent } from "@/lib/analytics";
+import {
+  trackEvent,
+  trackPersonaSelected,
+  trackLeadEmailSubmitted,
+} from "@/lib/analytics";
+
+const PERSONA_OPTIONS: { value: CalculatorPersona; label: string }[] = [
+  { value: "homeowner", label: "Homeowner" },
+  { value: "buyer", label: "Buyer" },
+  { value: "realtor", label: "Realtor" },
+];
 
 type GateState =
   | { step: "idle" }
-  | { step: "email_gate"; snapshot: ShareSummary }
-  | { step: "submitting"; snapshot: ShareSummary; email: string }
+  | { step: "email_gate"; snapshot: DraftSnapshot }
+  | { step: "submitting"; snapshot: DraftSnapshot; email: string }
   | { step: "saved" }
-  | { step: "error"; message: string; snapshot: ShareSummary; email: string };
+  | { step: "error"; message: string; snapshot: DraftSnapshot; email: string };
 
 export function CalculatorEmbed() {
+  const [persona, setPersona] = useState<CalculatorPersona>("homeowner");
   const [gate, setGate] = useState<GateState>({ step: "idle" });
   const [emailInput, setEmailInput] = useState("");
   const [widgetError, setWidgetError] = useState(false);
 
-  const handleShareSummary = useCallback((summary: ShareSummary) => {
-    setGate({ step: "email_gate", snapshot: summary });
-    setEmailInput("");
-    trackCustomEvent("share_summary_received");
+  const handlePersonaChange = useCallback((newPersona: CalculatorPersona) => {
+    setPersona(newPersona);
+    trackPersonaSelected(newPersona);
   }, []);
 
-  const handleEvent = useCallback((event: WidgetEvent | unknown) => {
+  const handleDraftSnapshot = useCallback((snapshot: DraftSnapshot) => {
+    setGate({ step: "email_gate", snapshot });
+    setEmailInput("");
+  }, []);
+
+  const handleEvent = useCallback((event: WidgetEvent) => {
     trackEvent(event);
   }, []);
 
@@ -45,18 +61,22 @@ export function CalculatorEmbed() {
       if (!email || !email.includes("@")) return;
 
       setGate({ step: "submitting", snapshot: gate.snapshot, email });
-      trackCustomEvent("lead_email_submitted");
+      trackLeadEmailSubmitted(persona);
 
       try {
         const res = await fetch("/api/lead", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, snapshot: gate.snapshot }),
+          body: JSON.stringify({
+            email,
+            persona,
+            draftSnapshot: gate.snapshot,
+          }),
         });
 
         const data = await res.json();
 
-        if (data.ok) {
+        if (data.ok || data.resume_token) {
           setGate({ step: "saved" });
         } else {
           setGate({
@@ -75,7 +95,7 @@ export function CalculatorEmbed() {
         });
       }
     },
-    [gate, emailInput],
+    [gate, emailInput, persona],
   );
 
   if (widgetError) {
@@ -99,12 +119,25 @@ export function CalculatorEmbed() {
 
   return (
     <div className="space-y-6">
+      <div className="mx-auto flex max-w-[920px] items-center justify-center gap-2">
+        {PERSONA_OPTIONS.map((opt) => (
+          <Button
+            key={opt.value}
+            variant={persona === opt.value ? "default" : "outline"}
+            size="sm"
+            onClick={() => handlePersonaChange(opt.value)}
+          >
+            {opt.label}
+          </Button>
+        ))}
+      </div>
+
       <div className="mx-auto max-w-[920px]">
         <WidgetErrorBoundary onError={() => setWidgetError(true)}>
           <FractPathCalculatorWidget
+            persona={persona}
             mode="marketing"
-            persona="investor" // required prop
-            onShareSummary={handleShareSummary}
+            onDraftSnapshot={handleDraftSnapshot}
             onEvent={handleEvent}
           />
         </WidgetErrorBoundary>
@@ -117,7 +150,7 @@ export function CalculatorEmbed() {
               <div className="text-center">
                 <h3 className="text-lg font-semibold">Save Your Scenario</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Enter your email to save this scenario and receive a summary.
+                  Enter your email to save this scenario and continue in the app.
                 </p>
               </div>
               <div className="space-y-2">

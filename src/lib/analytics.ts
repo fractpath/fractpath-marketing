@@ -1,4 +1,4 @@
-import type { WidgetEvent } from "fractpath-calculator-widget";
+import type { WidgetEvent, CalculatorPersona } from "fractpath-calculator-widget";
 
 declare global {
   interface Window {
@@ -9,21 +9,13 @@ declare global {
   }
 }
 
-/**
- * Analytics must be side-effect only and must not depend on widget payload structure.
- * Treat WidgetEvent as opaque; do not assume fields like `persona` exist.
- */
 export function trackEvent(event: WidgetEvent) {
   if (typeof window === "undefined") return;
 
   try {
-    // Best-effort event naming; fall back safely if shape is unknown
-    const name =
-      typeof event === "object" && event !== null && "type" in (event as any)
-        ? String((event as any).type)
-        : "widget_event";
-
-    window.plausible?.(name);
+    const name = event.type;
+    const persona = event.persona;
+    window.plausible?.(name, { props: { persona } });
   } catch {
     // analytics must never break the app
   }
@@ -37,4 +29,12 @@ export function trackCustomEvent(name: string, props?: Record<string, string>) {
   } catch {
     // analytics must never break the app
   }
+}
+
+export function trackPersonaSelected(persona: CalculatorPersona) {
+  trackCustomEvent("persona_selected", { persona });
+}
+
+export function trackLeadEmailSubmitted(persona: CalculatorPersona) {
+  trackCustomEvent("lead_email_submitted", { persona });
 }

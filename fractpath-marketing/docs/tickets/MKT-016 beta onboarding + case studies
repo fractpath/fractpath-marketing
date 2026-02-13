@@ -1,0 +1,319 @@
+TICKET MKT-016 — Beta onboarding + case studies
+Ticket ID
+
+MKT-016
+
+Title
+
+Beta onboarding flows, early proof points, and case study scaffolding
+
+Objective
+
+Design a controlled beta onboarding system that:
+
+converts marketing leads into qualified beta users
+
+sets clear expectations (what beta is / is not)
+
+captures structured proof points from early deals
+
+produces investor- and partner-ready case studies
+
+avoids operational overload
+
+This is about process + narrative, not heavy automation.
+
+Non-goals
+
+No public testimonials yet
+
+No performance guarantees
+
+No anonymized public deal marketplace
+
+No SEO content engine
+
+No referral virality loops
+
+Preconditions
+
+Marketing site live (fractpath.com)
+
+Calculator + persona toggles exist
+
+HubSpot integrated for lead capture
+
+APP-001 → APP-013 roadmap in place
+
+OPS-003 + OPS-004 complete
+
+Core Design Principles
+
+Beta is selective, not open
+
+Every beta user is a potential case study
+
+Clarity beats persuasion
+
+Proof over polish
+
+Manual is acceptable if structured
+
+Implementation Requirements
+A) Beta positioning (copy + framing)
+
+Create a clear beta narrative used consistently across site, email, and portal:
+
+Key points:
+
+“Limited beta”
+
+“Structured equity agreements”
+
+“Manual + guided in early phase”
+
+“Shaping the platform together”
+
+Required copy blocks:
+
+What beta includes
+
+What beta does not include
+
+How selection works
+
+Why early access matters
+
+Create doc:
+
+docs/marketing/beta-positioning.md
+
+B) Beta intake funnel (simple, gated)
+1) Public CTA (marketing site)
+
+Buttons:
+
+“Join Buyer Beta”
+
+“Join Homeowner Beta”
+
+“Join Realtor Beta”
+
+All lead to:
+
+Short gated form (email required)
+
+Persona-specific follow-up questions
+
+2) Persona-specific intake questions
+
+Buyer
+
+Target property location
+
+Timeline to ownership
+
+Approximate budget range
+
+Willingness to participate in case study (yes/no)
+
+Homeowner
+
+Property location
+
+Reason for liquidity
+
+Desired cash range
+
+Comfort with shared equity concept (scale)
+
+Willingness to participate in case study
+
+Realtor
+
+License state
+
+Years active
+
+Typical deal size
+
+Interest in beta referral program
+
+Capture in HubSpot properties.
+
+C) Beta acceptance flow (manual but clear)
+
+Once reviewed (you manually):
+
+Send “Beta Accepted” email
+
+Include:
+
+What happens next
+
+Link to portal signup
+
+Clear disclaimers
+
+Expectation of manual steps
+
+Create templates:
+
+docs/marketing/beta-email-templates.md
+
+
+Include:
+
+Accepted
+
+Waitlisted
+
+Not a fit (polite, future-oriented)
+
+D) Beta onboarding inside the app
+
+First-login experience:
+
+Welcome screen
+
+“What beta means” checklist
+
+Next steps CTA:
+
+Create scenario
+
+Invite counterparty
+
+Contact support
+
+Avoid feature overload.
+
+E) Case study data capture (quiet but systematic)
+
+Create a Case Study Capture Checklist for each beta deal:
+
+docs/marketing/case-study-capture.md
+
+
+Capture:
+
+Persona (buyer/homeowner/realtor)
+
+Starting situation
+
+Problem being solved
+
+Terms summary (sanitized)
+
+Timeline milestones
+
+Outcome (even if partial)
+
+Quotes (optional, anonymized)
+
+Do not promise publication—get consent later.
+
+F) Case study formats (lightweight)
+
+Prepare 3 formats:
+
+Internal learning brief
+
+Full detail
+
+Used for product improvement
+
+Partner-facing summary
+
+1–2 pages
+
+No identifying info
+
+Used with title firms, investors
+
+Public anonymized vignette (future)
+
+Short narrative
+
+“How it worked” focus
+
+No numbers unless approved
+
+Document structure:
+
+docs/marketing/case-study-formats.md
+
+G) Investor preview integration
+
+On marketing site:
+
+“Investor preview” section
+
+Show:
+
+Aggregated stats (e.g., “X scenarios modeled”)
+
+Hypothetical example (clearly labeled)
+
+Early beta participation count
+
+No real returns shown yet.
+
+H) Metrics to track during beta
+
+Track manually or via admin analytics:
+
+Beta signups by persona
+
+Accepted vs waitlisted
+
+Deals initiated
+
+Deals progressing to contract
+
+Time-to-first-value
+
+Document:
+
+docs/marketing/beta-metrics.md
+
+Acceptance Criteria (Definition of Done)
+
+Beta positioning copy exists and is consistent
+
+Persona-specific intake questions defined
+
+HubSpot properties mapped
+
+Beta acceptance emails templated
+
+In-app beta onboarding flow defined
+
+Case study capture checklist exists
+
+Investor preview narrative aligned
+
+Metrics defined and trackable
+
+QA Checklist
+
+ No promise of returns
+
+ No implication of guaranteed execution
+
+ Beta limitations clearly stated
+
+ Case study consent not assumed
+
+ Manual steps documented
+
+Deliverables
+
+Create:
+
+docs/marketing/
+├─ beta-positioning.md
+├─ beta-email-templates.md
+├─ case-study-capture.md
+├─ case-study-formats.md
+├─ beta-metrics.md

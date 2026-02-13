@@ -4,7 +4,8 @@ import { useCallback, useState, type FormEvent } from "react";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import {
   FractPathCalculatorWidget,
-  type ShareSummary,
+  type LiteShareSummaryV1,
+  // If WidgetEvent is a stable export, keep this. Otherwise, use `unknown` below.
   type WidgetEvent,
 } from "fractpath-calculator-widget";
 
@@ -16,23 +17,30 @@ import { trackEvent, trackCustomEvent } from "@/lib/analytics";
 
 type GateState =
   | { step: "idle" }
-  | { step: "email_gate"; snapshot: ShareSummary }
-  | { step: "submitting"; snapshot: ShareSummary; email: string }
+  | { step: "email_gate"; snapshot: LiteShareSummaryV1 }
+  | { step: "submitting"; snapshot: LiteShareSummaryV1; email: string }
   | { step: "saved" }
-  | { step: "error"; message: string; snapshot: ShareSummary; email: string };
+  | {
+      step: "error";
+      message: string;
+      snapshot: LiteShareSummaryV1;
+      email: string;
+    };
 
 export function CalculatorEmbed() {
   const [gate, setGate] = useState<GateState>({ step: "idle" });
   const [emailInput, setEmailInput] = useState("");
   const [widgetError, setWidgetError] = useState(false);
 
-  const handleShareSummary = useCallback((summary: ShareSummary) => {
-    setGate({ step: "email_gate", snapshot: summary });
+  const handleLiteSnapshot = useCallback((lite: LiteShareSummaryV1) => {
+    setGate({ step: "email_gate", snapshot: lite });
     setEmailInput("");
-    trackCustomEvent("share_summary_received");
+    trackCustomEvent("lite_snapshot_received");
   }, []);
 
-  const handleEvent = useCallback((event: WidgetEvent | unknown) => {
+  // If WidgetEvent is not guaranteed stable, switch param type to `unknown`
+  // and let trackEvent handle validation internally.
+  const handleEvent = useCallback((event: unknown) => {
     trackEvent(event);
   }, []);
 
@@ -103,8 +111,7 @@ export function CalculatorEmbed() {
         <WidgetErrorBoundary onError={() => setWidgetError(true)}>
           <FractPathCalculatorWidget
             mode="marketing"
-            persona="investor" // required prop
-            onShareSummary={handleShareSummary}
+            onLiteSnapshot={handleLiteSnapshot}
             onEvent={handleEvent}
           />
         </WidgetErrorBoundary>

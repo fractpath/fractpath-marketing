@@ -1,0 +1,319 @@
+TICKET OPS-005 — Beta operating runbook (day-to-day execution)
+Ticket ID
+
+OPS-005
+
+Title
+
+Beta operating runbook: daily workflows, escalation paths, and manual ops
+
+Objective
+
+Create a single, practical runbook that enables you to operate FractPath’s beta confidently and consistently by:
+
+standardizing daily/weekly workflows
+
+defining how leads, deals, payments, and partners are handled
+
+preventing missed follow-ups or compliance gaps
+
+reducing cognitive load for a solo founder
+
+making it easy to onboard future help (ops, legal, sales)
+
+This is the source of truth for “how beta actually runs.”
+
+Non-goals
+
+No automation-heavy SOPs
+
+No staffing plan
+
+No SLAs beyond simple expectations
+
+No enterprise compliance playbooks
+
+Preconditions
+
+MKT-016 (beta onboarding) complete
+
+OPS-003 and OPS-004 complete
+
+APP-001 → APP-013 roadmap in place
+
+You are operating as a solo founder
+
+Core Operating Principles
+
+Manual is fine if it’s predictable
+
+Nothing lives only in your head
+
+Every deal has a clear “next action”
+
+Escalate early, don’t improvise late
+
+Clarity > speed > automation
+
+Implementation Requirements
+A) Daily operating checklist
+
+Create:
+
+docs/ops/runbook/daily-checklist.md
+
+
+Include a short, repeatable list:
+
+Every day (15–30 min):
+
+Check new beta signups (HubSpot)
+
+Review admin analytics “Needs attention”
+
+Respond to support inbox
+
+Review deal status changes
+
+Log any off-platform actions in deal notes
+
+B) Weekly operating cadence
+
+Create:
+
+docs/ops/runbook/weekly-checklist.md
+
+
+Once per week:
+
+Review deal funnel metrics
+
+Identify stalled deals
+
+Follow up with title partner(s)
+
+Review payment ledger for due items
+
+Update beta metrics
+
+Capture early learnings (what confused users?)
+
+C) Lead → deal operating flow
+
+Create:
+
+docs/ops/runbook/lead-to-deal-flow.md
+
+
+Step-by-step:
+
+Lead captured (persona tagged)
+
+You review fit
+
+Accept / waitlist email sent
+
+User signs up to portal
+
+Scenario created
+
+Counterparty invited
+
+Deal status updated
+
+Notes logged
+
+Include:
+
+Where decisions are manual
+
+Where data must be logged
+
+D) Deal lifecycle states & actions
+
+Create:
+
+docs/ops/runbook/deal-lifecycle.md
+
+
+For each state:
+
+What it means
+
+What you should do
+
+What should happen next
+
+When to escalate
+
+Example states:
+
+DRAFT
+
+INVITED
+
+CONNECTED
+
+TERMS_SHAPING
+
+PRE_CONTRACT
+
+CONTRACTED_MANUAL
+
+ACTIVE
+
+EXITED
+
+E) Payment handling (MVP)
+
+Create:
+
+docs/ops/runbook/payments.md
+
+
+Cover:
+
+When payments are collected
+
+How Stripe events are monitored
+
+How failed payments are handled
+
+When manual follow-up is required
+
+How to log waivers or exceptions
+
+Explicitly document:
+
+No funds held in escrow by FractPath
+
+Payment disputes escalation path
+
+F) Title partner coordination (Maryland-first)
+
+Create:
+
+docs/ops/runbook/title-partner-coordination.md
+
+
+Include:
+
+When Eagle Title is contacted
+
+What packet is sent
+
+What FractPath provides vs partner provides
+
+How status updates are recorded
+
+Who communicates with homeowner/buyer
+
+This doc is also onboarding material for partners.
+
+G) Support & escalation playbook
+
+Create:
+
+docs/ops/runbook/support-escalation.md
+
+
+Define:
+
+Common questions (pricing, timing, legality)
+
+Response templates
+
+When to escalate to:
+
+legal counsel
+
+title partner
+
+Incident logging
+
+H) Change management & term updates
+
+Create:
+
+docs/ops/runbook/change-management.md
+
+
+Rules:
+
+When terms can be revised
+
+How new versions are created
+
+How users are notified
+
+How acceptance is logged
+
+Avoid:
+
+silent changes
+
+off-platform renegotiation
+
+I) Beta boundaries & “no” list
+
+Create:
+
+docs/ops/runbook/beta-boundaries.md
+
+
+Explicitly state:
+
+What beta does not support
+
+Requests you will defer
+
+How to say “not yet” politely
+
+This protects your time and credibility.
+
+Acceptance Criteria (Definition of Done)
+
+Daily and weekly checklists exist
+
+Lead-to-deal flow documented
+
+Deal states clearly defined
+
+Payment handling documented
+
+Title coordination flow documented
+
+Support escalation paths defined
+
+Change management rules exist
+
+Beta boundaries documented
+
+QA Checklist
+
+ Could someone else run beta for a week using this?
+
+ Are all manual steps logged somewhere?
+
+ Are escalation paths clear?
+
+ Are users treated consistently?
+
+ Is legal posture protected?
+
+If yes → this runbook is doing its job.
+
+Deliverables
+
+Create:
+
+docs/ops/runbook/
+├─ daily-checklist.md
+├─ weekly-checklist.md
+├─ lead-to-deal-flow.md
+├─ deal-lifecycle.md
+├─ payments.md
+├─ title-partner-coordination.md
+├─ support-escalation.md
+├─ change-management.md
+└─ beta-boundaries.md

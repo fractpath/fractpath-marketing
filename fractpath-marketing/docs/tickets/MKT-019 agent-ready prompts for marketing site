@@ -1,0 +1,262 @@
+TICKET MKT-019 — Agent-ready prompts for building the marketing site
+Ticket ID
+
+MKT-019
+
+Title
+
+Agent-ready execution prompts for FractPath marketing site (Next.js + calculator + lead capture)
+
+Objective
+
+Create a set of frozen, copy-pasteable prompts and task bundles that allow AI agents (Replit, Claude Code, Copilot) to:
+
+build the FractPath marketing site end-to-end
+
+follow the approved narrative, design system, and legal posture
+
+avoid scope creep into app functionality
+
+generate production-quality front-end code without manual assembly
+
+This ticket exists to eliminate hand-building and intent drift.
+
+Non-goals
+
+No backend deal logic
+
+No auth flows
+
+No app dashboard components
+
+No Stripe, Supabase, or messaging
+
+No investor deck generation
+
+Agent Contract (critical)
+
+Every agent prompt must include:
+
+“You are working inside the fractpath-marketing repository.
+You must not introduce application logic, authentication, or backend APIs.
+You must adhere strictly to the frozen specifications referenced below.”
+
+This prevents agents from “helpfully” overbuilding.
+
+Canonical references agents must use
+
+Agents must treat these as authoritative:
+
+docs/marketing/website-copy/* (from MKT-018)
+
+docs/marketing/beta-positioning.md
+
+docs/marketing/founder-narrative.md
+
+Design system constraints:
+
+shadcn/ui
+
+Tailwind
+
+dark mode
+
+cyan accent (WCAG AA)
+
+CTAs:
+
+Primary → scroll to calculator
+
+Secondary → scroll to How It Works
+
+Signup link → https://app.fractpath.com/signup
+
+A) Master agent prompt (use this first)
+
+Create:
+
+docs/marketing/agent-prompts/master-prompt.md
+
+
+Prompt content (paste-ready):
+
+You are an AI frontend engineer building the FractPath public marketing site.
+
+Constraints:
+
+Framework: Next.js (App Router)
+
+Styling: Tailwind + shadcn/ui
+
+Dark mode required
+
+Accent color: Cyan (WCAG AA compliant)
+
+No backend logic
+
+No authentication
+
+No app features
+
+You must follow:
+
+FractPath founder narrative
+
+Website copy documents
+
+Legal posture: illustrative, non-binding
+
+The site must include:
+
+Hero
+
+Calculator section
+
+How It Works
+
+Persona benefits
+
+Trust section
+
+CTA
+
+Do not invent product features.
+Ask clarifying questions only if absolutely required.
+
+B) Ticket-mapped agent task bundles
+
+Create one prompt per major section, mapped to existing MKT tickets.
+
+1) Marketing shell + layout (MKT-001 / MKT-007)
+docs/marketing/agent-prompts/site-shell.md
+
+
+Agent instructions:
+
+Create Next.js app structure
+
+Global layout
+
+Header with logo (left) + “Join beta” (right)
+
+Footer with legal microcopy
+
+Dark mode toggle
+
+2) Hero + narrative sections (MKT-018)
+docs/marketing/agent-prompts/hero-and-narrative.md
+
+
+Agent instructions:
+
+Implement hero copy exactly
+
+Proper spacing and typography
+
+CTA scroll behavior
+
+Legal microcopy placement
+
+3) Calculator embed + visualization container (MKT-003 / MKT-005)
+docs/marketing/agent-prompts/calculator-section.md
+
+
+Agent instructions:
+
+Create calculator container
+
+Embed script-injected React widget
+
+Persona toggle UI (UI only)
+
+Space reserved for charts
+
+Gated output messaging (email reveal copy only)
+
+⚠️ Explicitly state:
+
+Do not implement calculator logic — only embed and present.
+
+4) Personas + benefits (MKT-004 / MKT-008)
+docs/marketing/agent-prompts/personas.md
+
+
+Agent instructions:
+
+Three persona sections
+
+Neutral tone
+
+Benefit-driven copy
+
+No pricing or promises
+
+5) Analytics + lead capture wiring (MKT-006)
+docs/marketing/agent-prompts/analytics-and-leads.md
+
+
+Agent instructions:
+
+Plausible script integration
+
+HubSpot form embedding
+
+Persona tagging fields
+
+No cookies beyond analytics
+
+C) Guardrails agents must respect
+
+Include in every prompt:
+
+❌ No “returns”
+
+❌ No “investment advice”
+
+❌ No “offers”
+
+❌ No “guarantees”
+
+❌ No backend APIs
+
+❌ No app routes
+
+Violation = discard output.
+
+D) How you actually run this (practical workflow)
+
+Copy master prompt into Replit / Claude Code
+
+Paste one agent-prompt file at a time
+
+Review output
+
+Commit after each section
+
+Never let an agent touch app logic
+
+This keeps builds composable and debuggable.
+
+Acceptance Criteria (Definition of Done)
+
+Marketing site can be built end-to-end via agent prompts
+
+No intent drift across sections
+
+No accidental app functionality
+
+Copy exactly matches approved narrative
+
+UI is investor-presentable
+
+Deliverables
+
+Create:
+
+docs/marketing/agent-prompts/
+├─ master-prompt.md
+├─ site-shell.md
+├─ hero-and-narrative.md
+├─ calculator-section.md
+├─ personas.md
+└─ analytics-and-leads.md

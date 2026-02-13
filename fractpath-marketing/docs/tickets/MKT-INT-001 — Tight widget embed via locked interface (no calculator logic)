@@ -1,0 +1,186 @@
+# MKT-INT-001 — Tight Widget Embed via Locked Interface (No Calculator Logic)
+
+## Sprint
+Sprint 0 (alignment-only) → Sprint 9 (implementation foundation)
+
+---
+
+# Objective
+
+Lock the marketing site to a strict, contract-driven embed of `fractpath-calculator-widget`, ensuring:
+
+- All economic computation remains widget-owned (canonical compute module)
+- Marketing acts strictly as host/orchestrator
+- No calculator logic, derived math, or inferred values exist in marketing code
+- Marketing share remains illustrative and separate from app deal sharing
+
+This ticket exists to prevent silent drift and logic duplication.
+
+---
+
+# Context (Locked Decisions)
+
+- Widget is canonical for calculator compute + output generation.
+- Marketing embeds widget via package import (no iframe, no reimplementation).
+- Draft tokens and deal creation are app-owned.
+- App share tokens are app-owned:
+  - only OWNER mints
+  - any user may distribute an existing token URL
+- Marketing share is illustrative and not deal-backed.
+
+---
+
+# Embedding Rules (Hard Constraints)
+
+## Allowed in Marketing
+
+Marketing MAY:
+
+- Import widget package directly
+- Pass only props defined in WGT-INT-001 (public interface)
+- Render surrounding layout/copy
+- Handle:
+  - email capture UI
+  - CTA gating and redirects
+  - routing and query param forwarding
+- Forward widget-emitted callback payloads to marketing APIs (transport only)
+
+## Prohibited in Marketing
+
+Marketing must NOT:
+
+- Reimplement calculator math
+- Derive secondary metrics from widget outputs
+- Recalculate values for analytics/reporting
+- Interpret/transform/normalize DraftSnapshot or ShareSummary
+- Introduce persona logic beyond setting widget props
+- Cache or persist calculator outputs independently
+- Create or redeem app deal share tokens
+
+Any code that looks like:
+- “estimated”
+- “calculated”
+- “derived”
+- “normalized”
+outside the widget boundary is a violation.
+
+---
+
+# Callback Wiring Semantics (Opaque Forwarding)
+
+Marketing wires callbacks but does not interpret payloads.
+
+## onDraftSnapshot(draft: DraftSnapshot)
+Marketing MUST:
+
+- gate via email capture (UX only)
+- forward payload unchanged to the marketing endpoint (MKT-006):
+  - `/api/lead`
+
+Marketing MUST NOT:
+
+- modify draft fields
+- add metadata
+- strip fields
+
+## onShareSummary(summary: ShareSummary)
+Marketing MUST:
+
+- forward payload unchanged to `/api/share` for branded email delivery
+
+Marketing MUST NOT:
+
+- enhance the summary
+- compute additional values
+- attach deal identifiers or auth context
+
+---
+
+# Opaque Forwarding Rule (Byte-for-Byte)
+
+- Payloads must be forwarded without mutation:
+  - no field adds/removes/renames
+  - no recompute
+  - no “normalization”
+- Marketing treats DraftSnapshot and ShareSummary as opaque contract objects.
+- Any transformation beyond transport is prohibited.
+
+---
+
+# Analytics Boundary (Explicit)
+
+Marketing analytics MAY:
+
+- track high-level events:
+  - `calculator_started`
+  - `persona_selected`
+  - `save_clicked`
+  - `share_clicked`
+  - `share_mode_viewed` (if `mode=share`)
+
+Marketing analytics MUST NOT:
+
+- recompute or restate widget outputs
+- store derived financial values
+- log raw numeric outputs for “metrics”
+- present computed values as marketing-authored analytics
+
+If values are referenced, they must be treated as display strings only and must not be used to compute further metrics.
+
+---
+
+# Version & Contract Enforcement
+
+- Marketing must pin widget dependency to a known version or controlled range.
+- Any widget contract version bump requires:
+  - dependency update
+  - review against WGT-050
+  - confirmation that forwarding remains unchanged
+- Marketing must not rely on undocumented widget behavior.
+
+---
+
+# Failure Handling (Fail Closed)
+
+If widget fails to load or emit expected callbacks:
+
+- marketing must not provide fallback math or estimates
+- show retry / contact support state
+
+No shadow calculators.
+
+---
+
+# Prohibitions (No Silent Mutation)
+
+Marketing must NOT:
+
+- add fields to DraftSnapshot or ShareSummary
+- remove fields before forwarding
+- mutate payload contents
+- coerce, “fix”, or normalize widget outputs
+- substitute placeholders to “keep flow working”
+
+Violations require rollback and contract review per OPS-INT-001.
+
+---
+
+# Acceptance Criteria
+
+- Widget embedded as canonical calculator surface.
+- Marketing contains zero calculator math or derived metrics.
+- DraftSnapshot and ShareSummary forwarded unchanged.
+- Marketing share remains illustrative and not deal-backed.
+- Analytics boundaries enforced.
+- Behavior aligns with OPS-INT-001 orchestration rules.
+
+---
+
+# Dependencies
+
+- OPS-INT-001 — Multi-repo orchestration + contract enforcement
+- WGT-INT-001 — Widget public interface (locked)
+- WGT-031 — Widget gating semantics
+- WGT-030 — Widget UI surface + mode behavior
+- WGT-020 — Share semantics
+

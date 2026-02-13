@@ -1,6 +1,6 @@
 {
   "name": "@fractpath/compute",
-  "version": "10.0.0-dev",
+  "version": "10.0.0",
   "description": "FractPath canonical compute engine — single source of truth for financial computation",
   "type": "module",
   "main": "./dist/index.cjs",

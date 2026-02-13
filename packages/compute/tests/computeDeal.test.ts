@@ -5,7 +5,7 @@ import {
   irrMonthlySingleOutflowInflow,
   annualizeMonthly,
 } from "../src/irr.js";
-import { COMPUTE_VERSION } from "../src/version.js";
+import { COMPUTE_SEMVER, COMPUTE_VERSION } from "../src/version.js";
 import type { DealTerms, ScenarioAssumptions } from "../src/types.js";
 
 const NOW = "2026-02-13T00:00:00.000Z";
@@ -96,6 +96,7 @@ describe("computeDeal", () => {
     const result = computeDeal(terms, assumptions, NOW);
 
     expect(result.compute_version).toBe(COMPUTE_VERSION);
+    expect(COMPUTE_VERSION.startsWith(COMPUTE_SEMVER)).toBe(true);
     expect(result.computed_at).toBe(NOW);
 
     const tf = result.outputs.timing_factor_effective;

@@ -5,7 +5,6 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 import {
   FractPathCalculatorWidget,
   type LiteShareSummaryV1,
-  // If WidgetEvent is a stable export, keep this. Otherwise, use `unknown` below.
   type WidgetEvent,
 } from "fractpath-calculator-widget";
 
@@ -20,14 +19,14 @@ type GateState =
   | { step: "email_gate"; snapshot: LiteShareSummaryV1 }
   | { step: "submitting"; snapshot: LiteShareSummaryV1; email: string }
   | { step: "saved" }
-  | {
-      step: "error";
-      message: string;
-      snapshot: LiteShareSummaryV1;
-      email: string;
-    };
+  | { step: "error"; message: string; snapshot: LiteShareSummaryV1; email: string };
 
-export function CalculatorEmbed() {
+type CalculatorEmbedProps = {
+  persona: "homeowner" | "buyer" | "realtor";
+  onPersonaChange: (persona: "homeowner" | "buyer" | "realtor") => void;
+};
+
+export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedProps) {
   const [gate, setGate] = useState<GateState>({ step: "idle" });
   const [emailInput, setEmailInput] = useState("");
   const [widgetError, setWidgetError] = useState(false);
@@ -38,8 +37,6 @@ export function CalculatorEmbed() {
     trackCustomEvent("lite_snapshot_received");
   }, []);
 
-  // If WidgetEvent is not guaranteed stable, switch param type to `unknown`
-  // and let trackEvent handle validation internally.
   const handleEvent = useCallback((event: unknown) => {
     trackEvent(event);
   }, []);
@@ -59,21 +56,18 @@ export function CalculatorEmbed() {
         const res = await fetch("/api/lead", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, snapshot: gate.snapshot }),
+          body: JSON.stringify({ email, snapshot: gate.snapshot, persona }),
         });
-
         const data = await res.json();
 
-        if (data.ok) {
-          setGate({ step: "saved" });
-        } else {
+        if (data.ok) setGate({ step: "saved" });
+        else
           setGate({
             step: "error",
             message: data.error || "Something went wrong. Please try again.",
             snapshot: gate.snapshot,
             email,
           });
-        }
       } catch {
         setGate({
           step: "error",
@@ -83,19 +77,16 @@ export function CalculatorEmbed() {
         });
       }
     },
-    [gate, emailInput],
+    [gate, emailInput, persona]
   );
 
   if (widgetError) {
     return (
       <Card className="mx-auto max-w-2xl rounded-2xl">
         <CardContent className="flex min-h-[200px] flex-col items-center justify-center gap-4 p-8 text-center">
-          <p className="text-lg font-medium text-muted-foreground">
-            Calculator Unavailable
-          </p>
+          <p className="text-lg font-medium text-muted-foreground">Calculator Unavailable</p>
           <p className="max-w-md text-sm text-muted-foreground">
-            The scenario calculator could not be loaded. Please refresh the page
-            or try again later.
+            The scenario calculator could not be loaded. Please refresh the page or try again later.
           </p>
           <Button variant="outline" onClick={() => window.location.reload()}>
             Refresh Page
@@ -109,106 +100,15 @@ export function CalculatorEmbed() {
     <div className="space-y-6">
       <div className="mx-auto max-w-[920px]">
         <WidgetErrorBoundary onError={() => setWidgetError(true)}>
+          {/* Persona tabs could be added in parent component */}
           <FractPathCalculatorWidget
             mode="marketing"
+            persona={persona}
             onLiteSnapshot={handleLiteSnapshot}
             onEvent={handleEvent}
           />
         </WidgetErrorBoundary>
       </div>
-
-      {gate.step === "email_gate" && (
-        <Card className="mx-auto max-w-md rounded-2xl border-primary/20 shadow-md">
-          <CardContent className="p-6">
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
-              <div className="text-center">
-                <h3 className="text-lg font-semibold">Save Your Scenario</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Enter your email to save this scenario and receive a summary.
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="gate-email">Email</Label>
-                <Input
-                  id="gate-email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
-                  required
-                  autoFocus
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                Save &amp; Continue
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full"
-                onClick={() => setGate({ step: "idle" })}
-              >
-                Cancel
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      )}
-
-      {gate.step === "submitting" && (
-        <Card className="mx-auto max-w-md rounded-2xl">
-          <CardContent className="flex items-center justify-center gap-3 p-6">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="text-sm text-muted-foreground">
-              Saving your scenario...
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {gate.step === "saved" && (
-        <Card className="mx-auto max-w-md rounded-2xl border-green-500/20">
-          <CardContent className="p-6 text-center">
-            <p className="text-sm font-medium text-green-700 dark:text-green-400">
-              Saved! Check your email for a scenario summary.
-            </p>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="mt-3"
-              onClick={() => setGate({ step: "idle" })}
-            >
-              Done
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
-      {gate.step === "error" && (
-        <Card className="mx-auto max-w-md rounded-2xl border-destructive/20">
-          <CardContent className="p-6 text-center">
-            <p className="text-sm text-destructive">{gate.message}</p>
-            <div className="mt-4 flex justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setGate({ step: "email_gate", snapshot: gate.snapshot })
-                }
-              >
-                Try Again
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setGate({ step: "idle" })}
-              >
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
@@ -218,29 +118,6 @@ type ErrorBoundaryProps = {
   onError: () => void;
 };
 
-type ErrorBoundaryState = {
-  hasError: boolean;
-};
+type ErrorBoundaryState = { hasError: boolean };
 
 class WidgetErrorBoundary extends Component<
-  ErrorBoundaryProps,
-  ErrorBoundaryState
-> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(): ErrorBoundaryState {
-    return { hasError: true };
-  }
-
-  componentDidCatch(_error: Error, _info: ErrorInfo) {
-    this.props.onError();
-  }
-
-  render() {
-    if (this.state.hasError) return null;
-    return this.props.children;
-  }
-}

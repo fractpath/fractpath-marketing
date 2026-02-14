@@ -27,7 +27,11 @@ import {
   trackCustomEvent,
 } from "@/lib/analytics";
 
-function snapshotToDealTerms(snapshot: DraftSnapshot): DealTerms | null {
+function snapshotToDealTerms(snapshot: DraftSnapshot, floor_multiple: number, ceiling_multiple: number): DealTerms | null {
+  if (!(floor_multiple > 0)) return null;
+  if (!(ceiling_multiple > 0)) return null;
+  if (floor_multiple > ceiling_multiple) return null;
+
   const iba = snapshot.inputs.initialBuyAmount;
   if (iba <= 0) return null;
 
@@ -35,8 +39,8 @@ function snapshotToDealTerms(snapshot: DraftSnapshot): DealTerms | null {
     contract_version: snapshot.contract_version,
     schema_version: snapshot.schema_version,
     iba_usd: iba,
-    floor_multiple: 0.8,
-    ceiling_multiple: 2.0,
+    floor_multiple,
+    ceiling_multiple,
     downside_mode: "HARD_FLOOR",
     timing_factor_gain_only: true,
     maturity_months: snapshot.inputs.termYears * 12,
@@ -58,8 +62,8 @@ function snapshotToAssumptions(snapshot: DraftSnapshot): ScenarioAssumptions | n
   };
 }
 
-function recomputeSnapshot(snapshot: DraftSnapshot): DealSnapshot | null {
-  const terms = snapshotToDealTerms(snapshot);
+function recomputeSnapshot(snapshot: DraftSnapshot, floor_multiple: number, ceiling_multiple: number): DealSnapshot | null {
+  const terms = snapshotToDealTerms(snapshot, floor_multiple, ceiling_multiple);
   const assumptions = snapshotToAssumptions(snapshot);
   if (!terms || !assumptions) return null;
 
@@ -99,6 +103,10 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
   const [emailInput, setEmailInput] = useState("");
   const [widgetError, setWidgetError] = useState(false);
 
+
+  const [floorMultiple, setFloorMultiple] = useState("0.8");
+  const [ceilingMultiple, setCeilingMultiple] = useState("2.0");
+
   const handlePersonaChange = useCallback(
     (newPersona: CalculatorPersona) => {
       onPersonaChange(newPersona);
@@ -129,10 +137,19 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
       const email = emailInput.trim();
       if (!email || !email.includes("@")) return;
 
+      const floor = Number.parseFloat(floorMultiple);
+      const ceiling = Number.parseFloat(ceilingMultiple);
+
+      if (!(floor > 0) || !(ceiling > 0) || floor > ceiling) {
+        console.warn("[compute] invalid deal terms", { floor, ceiling });
+        return;
+      }
+
       setGate({ step: "save_submitting", snapshot: gate.snapshot, email });
       trackLeadEmailSubmitted(persona);
 
-      const canonicalSnapshot = recomputeSnapshot(gate.snapshot);
+
+      const canonicalSnapshot = recomputeSnapshot(gate.snapshot, floor, ceiling);
       if (canonicalSnapshot) {
         console.log("[compute] canonical recompute succeeded", {
           investor_multiple: canonicalSnapshot.outputs.investor_multiple,
@@ -288,12 +305,43 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
                 <Input
                   id="gate-email"
                   type="email"
+
                   placeholder="you@example.com"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   required
                   autoFocus
                 />
+              </div>
+              <div className="space-y-3 rounded-xl border border-border/60 p-3">
+                <div className="text-sm font-medium">Deal terms</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="gate-floor">Floor multiple</Label>
+                    <Input
+                      id="gate-floor"
+
+                      inputMode="decimal"
+                      placeholder="0.8"
+                      value={floorMultiple}
+                      onChange={(e) => setFloorMultiple(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gate-ceiling">Ceiling multiple</Label>
+                    <Input
+                      id="gate-ceiling"
+
+                      inputMode="decimal"
+                      placeholder="2.0"
+                      value={ceilingMultiple}
+                      onChange={(e) => setCeilingMultiple(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Defaults shown. These terms are editable in the app.
+                </p>
               </div>
               <Button type="submit" className="w-full">
                 Save &amp; Continue

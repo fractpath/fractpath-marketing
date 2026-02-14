@@ -382,9 +382,13 @@ export async function POST(request: NextRequest) {
 
   hubspotUpsert(email, snapshotJson, persona).catch(() => {});
 
+  const leadId = crypto.randomUUID();
   const resumeToken = crypto.randomUUID();
 
   const leadRecord: Record<string, unknown> = {
+    lead_id: leadId,
+    lead_version: 1,
+    lead_schema_version: "lead_v1",
     email,
     persona,
     resume_token: resumeToken,

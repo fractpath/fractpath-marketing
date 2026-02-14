@@ -70,6 +70,65 @@ function containsFullOnlyKeys(snapshot: Record<string, unknown>): boolean {
   return false;
 }
 
+const CANONICAL_MAX_BYTES = 20_480;
+const PII_KEY_PATTERN = /(address|street|zip|postal|ssn|dob|phone|email)/i;
+
+function redactPiiFromInputs(
+  inputs: Record<string, unknown>,
+): Record<string, unknown> {
+  const redacted: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(inputs)) {
+    redacted[key] = PII_KEY_PATTERN.test(key) ? "[REDACTED]" : value;
+  }
+  return redacted;
+}
+
+function buildSafeCanonicalSnapshot(
+  raw: Record<string, unknown>,
+): {
+  safe: Record<string, unknown>;
+  size_bytes: number;
+  truncated: boolean;
+} {
+  const inputs = redactPiiFromInputs(
+    raw.inputs as Record<string, unknown>,
+  );
+
+  const full = {
+    compute_version: raw.compute_version,
+    computed_at: raw.computed_at,
+    inputs,
+    assumptions: raw.assumptions,
+    outputs: raw.outputs,
+  };
+
+  let json = JSON.stringify(full);
+  let sizeBytes = new TextEncoder().encode(json).length;
+
+  if (sizeBytes <= CANONICAL_MAX_BYTES) {
+    return { safe: full, size_bytes: sizeBytes, truncated: false };
+  }
+
+  const t1 = { ...full, outputs: "[TRUNCATED]" };
+  json = JSON.stringify(t1);
+  sizeBytes = new TextEncoder().encode(json).length;
+  if (sizeBytes <= CANONICAL_MAX_BYTES) {
+    return { safe: t1, size_bytes: sizeBytes, truncated: true };
+  }
+
+  const t2 = { ...t1, assumptions: "[TRUNCATED]" };
+  json = JSON.stringify(t2);
+  sizeBytes = new TextEncoder().encode(json).length;
+  if (sizeBytes <= CANONICAL_MAX_BYTES) {
+    return { safe: t2, size_bytes: sizeBytes, truncated: true };
+  }
+
+  const t3 = { ...t2, inputs: "[TRUNCATED]" };
+  json = JSON.stringify(t3);
+  sizeBytes = new TextEncoder().encode(json).length;
+  return { safe: t3, size_bytes: sizeBytes, truncated: true };
+}
+
 function isValidCanonicalSnapshot(
   snapshot: unknown,
 ): snapshot is Record<string, unknown> {
@@ -308,13 +367,24 @@ export async function POST(request: NextRequest) {
     draftSnapshot,
   );
 
+  let safeCanonical: Record<string, unknown> | undefined;
+  let canonicalSnapshot_size_bytes: number | undefined;
+  let canonicalSnapshot_truncated = false;
+
+  if (canonicalSnapshot) {
+    const result = buildSafeCanonicalSnapshot(canonicalSnapshot);
+    safeCanonical = result.safe;
+    canonicalSnapshot_size_bytes = result.size_bytes;
+    canonicalSnapshot_truncated = result.truncated;
+  }
+
   const snapshotJson = JSON.stringify(draftSnapshot);
 
   hubspotUpsert(email, snapshotJson, persona).catch(() => {});
 
   const resumeToken = crypto.randomUUID();
 
-  const leadRecord = {
+  const leadRecord: Record<string, unknown> = {
     email,
     persona,
     resume_token: resumeToken,
@@ -322,15 +392,20 @@ export async function POST(request: NextRequest) {
     deal_terms_defaults_used: dealTermsDefaultsUsed,
     has_canonical_snapshot: canonicalSnapshot !== null,
     canonicalSnapshot_invalid,
-    canonicalSnapshot: canonicalSnapshot ?? undefined,
     captured_at: new Date().toISOString(),
   };
+
+  if (safeCanonical) {
+    leadRecord.canonicalSnapshot = safeCanonical;
+    leadRecord.canonicalSnapshot_size_bytes = canonicalSnapshot_size_bytes;
+    leadRecord.canonicalSnapshot_truncated = canonicalSnapshot_truncated;
+  }
 
   console.log("[lead] captured:", JSON.stringify(leadRecord));
 
   if (canonicalSnapshot) {
     console.log(
-      `[lead] canonicalSnapshot stored: compute_version=${String(canonicalSnapshot.compute_version)}, token=${resumeToken}`,
+      `[lead] canonicalSnapshot stored: compute_version=${String(canonicalSnapshot.compute_version)}, size=${canonicalSnapshot_size_bytes}B, truncated=${canonicalSnapshot_truncated}, token=${resumeToken}`,
     );
   }
 

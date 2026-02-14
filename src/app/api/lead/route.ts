@@ -99,25 +99,43 @@ function extractDealTermsDefaults(
   canonicalInputs: Record<string, unknown> | null,
   draftSnapshot: Record<string, unknown>,
 ): Record<string, unknown> {
+  const draftInputs = draftSnapshot.inputs as Record<string, unknown> | undefined;
+
+  const canonicalMaturity =
+    canonicalInputs && typeof canonicalInputs.maturity_months === "number"
+      ? canonicalInputs.maturity_months
+      : canonicalInputs && typeof canonicalInputs.maturityMonths === "number"
+        ? canonicalInputs.maturityMonths
+        : null;
+
+  const draftTermYears = Number(draftInputs?.termYears ?? 5);
+  const draftMaturity = Number(
+    draftInputs?.maturity_months ??
+      draftInputs?.maturityMonths ??
+      draftTermYears * 12,
+  );
+
+  const maturity_months =
+    (canonicalMaturity && canonicalMaturity > 0 ? canonicalMaturity : null) ??
+    (draftMaturity > 0 ? draftMaturity : 60);
+
   if (canonicalInputs) {
     return {
       floor_multiple: canonicalInputs.floor_multiple,
       ceiling_multiple: canonicalInputs.ceiling_multiple,
       downside_mode: canonicalInputs.downside_mode,
       timing_factor_gain_only: canonicalInputs.timing_factor_gain_only,
+      maturity_months,
       source: "canonical_snapshot",
     };
   }
 
-  const draftInputs = draftSnapshot.inputs as Record<string, unknown> | undefined;
   const iba = Number(draftInputs?.initialBuyAmount ?? draftInputs?.iba_usd ?? 1);
-  const termYears = Number(draftInputs?.termYears ?? 5);
-  const maturityMonths = termYears * 12;
 
   try {
     const defaults = defaultDealTerms({
       iba_usd: iba > 0 ? iba : 1,
-      maturity_months: maturityMonths > 0 ? maturityMonths : 60,
+      maturity_months,
     });
 
     return {
@@ -125,6 +143,7 @@ function extractDealTermsDefaults(
       ceiling_multiple: defaults.ceiling_multiple,
       downside_mode: defaults.downside_mode,
       timing_factor_gain_only: defaults.timing_factor_gain_only,
+      maturity_months,
       source: "default_deal_terms",
     };
   } catch {
@@ -133,6 +152,7 @@ function extractDealTermsDefaults(
       ceiling_multiple: 2.0,
       downside_mode: "HARD_FLOOR",
       timing_factor_gain_only: true,
+      maturity_months,
       source: "fallback",
     };
   }
@@ -302,6 +322,7 @@ export async function POST(request: NextRequest) {
     deal_terms_defaults_used: dealTermsDefaultsUsed,
     has_canonical_snapshot: canonicalSnapshot !== null,
     canonicalSnapshot_invalid,
+    canonicalSnapshot: canonicalSnapshot ?? undefined,
     captured_at: new Date().toISOString(),
   };
 

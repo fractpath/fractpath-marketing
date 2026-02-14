@@ -11,6 +11,7 @@ import {
 } from "fractpath-calculator-widget";
 import {
   computeDeal,
+  defaultDealTerms,
   type DealTerms,
   type ScenarioAssumptions,
   type DealSnapshot,
@@ -104,8 +105,15 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
   const [widgetError, setWidgetError] = useState(false);
 
 
-  const [floorMultiple, setFloorMultiple] = useState("0.8");
-  const [ceilingMultiple, setCeilingMultiple] = useState("2.0");
+  const [defaults] = useState(() =>
+    defaultDealTerms({ iba_usd: 1, maturity_months: 12 })
+  );
+  const [floorMultiple, setFloorMultiple] = useState(() =>
+    defaults.floor_multiple.toString()
+  );
+  const [ceilingMultiple, setCeilingMultiple] = useState(() =>
+    defaults.ceiling_multiple.toString()
+  );
 
   const handlePersonaChange = useCallback(
     (newPersona: CalculatorPersona) => {

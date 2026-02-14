@@ -1,5 +1,6 @@
 export {
   computeDeal,
+  defaultDealTerms,
   type DealTerms,
   type ScenarioAssumptions,
   type DealSnapshot,

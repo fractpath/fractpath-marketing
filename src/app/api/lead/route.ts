@@ -383,7 +383,53 @@ export async function POST(request: NextRequest) {
   hubspotUpsert(email, snapshotJson, persona).catch(() => {});
 
   const leadId = crypto.randomUUID();
-  const resumeToken = crypto.randomUUID();
+
+  const mintPayload: Record<string, unknown> = {
+    source: "marketing",
+    snapshot_json: draftSnapshot,
+  };
+  if (canonicalSnapshot) {
+    mintPayload.canonical_snapshot = canonicalSnapshot;
+  }
+
+  let token: string | null = null;
+  let resumeUrl: string | null = null;
+  let mintSource = "local_fallback";
+
+  try {
+    const mintRes = await fetch(
+      `${FRACTPATH_APP_URL}/api/draft-tokens/mint`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(mintPayload),
+        signal: AbortSignal.timeout(5000),
+      },
+    );
+
+    if (mintRes.ok) {
+      const mintData = (await mintRes.json()) as Record<string, unknown>;
+      if (typeof mintData.token === "string" && mintData.token) {
+        token = mintData.token;
+        resumeUrl =
+          typeof mintData.resumeUrl === "string"
+            ? mintData.resumeUrl
+            : `${FRACTPATH_APP_URL}/resume?token=${token}`;
+        mintSource = "app_mint";
+      }
+    } else {
+      console.warn(
+        `[lead] draft-tokens/mint returned ${mintRes.status}: ${await mintRes.text().catch(() => "(unreadable)")}`,
+      );
+    }
+  } catch (err) {
+    console.warn("[lead] draft-tokens/mint call failed (using local fallback):", err);
+  }
+
+  if (!token) {
+    token = crypto.randomUUID();
+    resumeUrl = `${FRACTPATH_APP_URL}/resume?token=${token}`;
+  }
 
   const leadRecord: Record<string, unknown> = {
     lead_id: leadId,
@@ -391,7 +437,8 @@ export async function POST(request: NextRequest) {
     lead_schema_version: "lead_v1",
     email,
     persona,
-    resume_token: resumeToken,
+    resume_token: token,
+    mint_source: mintSource,
     contract_version: String(draftSnapshot.contract_version),
     deal_terms_defaults_used: dealTermsDefaultsUsed,
     has_canonical_snapshot: canonicalSnapshot !== null,
@@ -409,9 +456,14 @@ export async function POST(request: NextRequest) {
 
   if (canonicalSnapshot) {
     console.log(
-      `[lead] canonicalSnapshot stored: compute_version=${String(canonicalSnapshot.compute_version)}, size=${canonicalSnapshot_size_bytes}B, truncated=${canonicalSnapshot_truncated}, token=${resumeToken}`,
+      `[lead] canonicalSnapshot stored: compute_version=${String(canonicalSnapshot.compute_version)}, size=${canonicalSnapshot_size_bytes}B, truncated=${canonicalSnapshot_truncated}, token=${token}`,
     );
   }
 
-  return NextResponse.json({ resume_token: resumeToken });
+  return NextResponse.json({
+    ok: true,
+    resume_token: token,
+    token,
+    resumeUrl,
+  });
 }

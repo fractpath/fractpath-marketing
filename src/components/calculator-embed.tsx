@@ -9,6 +9,13 @@ import {
   type ShareSummary,
   type WidgetEvent,
 } from "fractpath-calculator-widget";
+import {
+  computeDeal,
+  defaultDealTerms,
+  type DealTerms,
+  type ScenarioAssumptions,
+  type DealSnapshot,
+} from "@/lib/compute";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,6 +27,55 @@ import {
   trackLeadEmailSubmitted,
   trackCustomEvent,
 } from "@/lib/analytics";
+
+function snapshotToDealTerms(snapshot: DraftSnapshot, floor_multiple: number, ceiling_multiple: number): DealTerms | null {
+  if (!(floor_multiple > 0)) return null;
+  if (!(ceiling_multiple > 0)) return null;
+  if (floor_multiple > ceiling_multiple) return null;
+
+  const iba = snapshot.inputs.initialBuyAmount;
+  if (iba <= 0) return null;
+
+  return {
+    contract_version: snapshot.contract_version,
+    schema_version: snapshot.schema_version,
+    iba_usd: iba,
+    floor_multiple,
+    ceiling_multiple,
+    downside_mode: "HARD_FLOOR",
+    timing_factor_gain_only: true,
+    maturity_months: snapshot.inputs.termYears * 12,
+  };
+}
+
+function snapshotToAssumptions(snapshot: DraftSnapshot): ScenarioAssumptions | null {
+  const start = snapshot.inputs.homeValue;
+  const growthRate = snapshot.inputs.annualGrowthRate / 100;
+  const years = snapshot.inputs.termYears;
+  const end = start * Math.pow(1 + growthRate, years);
+
+  if (start <= 0 || years <= 0) return null;
+
+  return {
+    start_fmv_usd: start,
+    end_fmv_usd: end,
+    months_held: years * 12,
+  };
+}
+
+function recomputeSnapshot(snapshot: DraftSnapshot, floor_multiple: number, ceiling_multiple: number): DealSnapshot | null {
+  const terms = snapshotToDealTerms(snapshot, floor_multiple, ceiling_multiple);
+  const assumptions = snapshotToAssumptions(snapshot);
+  if (!terms || !assumptions) return null;
+
+  try {
+    const nowIso = new Date().toISOString();
+    return computeDeal(terms, assumptions, nowIso);
+  } catch (err) {
+    console.warn("[compute] recompute failed:", err);
+    return null;
+  }
+}
 
 const PERSONA_OPTIONS: { value: CalculatorPersona; label: string }[] = [
   { value: "homeowner", label: "Homeowner" },
@@ -47,6 +103,17 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
   const [gate, setGate] = useState<GateState>({ step: "idle" });
   const [emailInput, setEmailInput] = useState("");
   const [widgetError, setWidgetError] = useState(false);
+
+
+  const [defaults] = useState(() =>
+    defaultDealTerms({ iba_usd: 1, maturity_months: 12 })
+  );
+  const [floorMultiple, setFloorMultiple] = useState(() =>
+    defaults.floor_multiple.toString()
+  );
+  const [ceilingMultiple, setCeilingMultiple] = useState(() =>
+    defaults.ceiling_multiple.toString()
+  );
 
   const handlePersonaChange = useCallback(
     (newPersona: CalculatorPersona) => {
@@ -78,8 +145,25 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
       const email = emailInput.trim();
       if (!email || !email.includes("@")) return;
 
+      const floor = Number.parseFloat(floorMultiple);
+      const ceiling = Number.parseFloat(ceilingMultiple);
+
+      if (!(floor > 0) || !(ceiling > 0) || floor > ceiling) {
+        console.warn("[compute] invalid deal terms", { floor, ceiling });
+        return;
+      }
+
       setGate({ step: "save_submitting", snapshot: gate.snapshot, email });
       trackLeadEmailSubmitted(persona);
+
+
+      const canonicalSnapshot = recomputeSnapshot(gate.snapshot, floor, ceiling);
+      if (canonicalSnapshot) {
+        console.log("[compute] canonical recompute succeeded", {
+          investor_multiple: canonicalSnapshot.outputs.investor_multiple,
+          investor_settlement_usd: canonicalSnapshot.outputs.investor_settlement_usd,
+        });
+      }
 
       try {
         const res = await fetch("/api/lead", {
@@ -89,6 +173,7 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
             email,
             persona,
             draftSnapshot: gate.snapshot,
+            canonicalSnapshot: canonicalSnapshot ?? undefined,
           }),
         });
 
@@ -228,12 +313,43 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
                 <Input
                   id="gate-email"
                   type="email"
+
                   placeholder="you@example.com"
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   required
                   autoFocus
                 />
+              </div>
+              <div className="space-y-3 rounded-xl border border-border/60 p-3">
+                <div className="text-sm font-medium">Deal terms</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="gate-floor">Floor multiple</Label>
+                    <Input
+                      id="gate-floor"
+
+                      inputMode="decimal"
+                      placeholder="0.8"
+                      value={floorMultiple}
+                      onChange={(e) => setFloorMultiple(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gate-ceiling">Ceiling multiple</Label>
+                    <Input
+                      id="gate-ceiling"
+
+                      inputMode="decimal"
+                      placeholder="2.0"
+                      value={ceilingMultiple}
+                      onChange={(e) => setCeilingMultiple(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Defaults shown. These terms are editable in the app.
+                </p>
               </div>
               <Button type="submit" className="w-full">
                 Save &amp; Continue

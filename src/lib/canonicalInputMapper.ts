@@ -1,4 +1,10 @@
-export const CANONICAL_COMPUTE_VERSION = "10.1.0";
+// Canonical compute authority:
+// fractpath-calculator-widget/docs/contracts/CANONICAL_COMPUTE_CONTRACT_V10_1.md
+//
+// IMPORTANT:
+// - Do NOT hardcode compute_version in marketing.
+// - Marketing only maps + transports canonical inputs (snake_case).
+// - The compute engine (widget/app) owns compute_version and outputs.
 
 export type DownsideMode = "HARD_FLOOR" | "NO_FLOOR";
 
@@ -50,6 +56,8 @@ export interface MapperSuccess {
 
 export type MapperResult = MapperSuccess | MapperError;
 
+// Marketing defaults only: these are NOT the compute engine outputs.
+// Keep all defaults centralized here to prevent drift.
 export const DEAL_TERMS_DEFAULTS = {
   monthly_payment: 0,
   number_of_payments: 0,
@@ -83,14 +91,11 @@ export interface WidgetInputs {
 
 function finitePositive(v: unknown, field: string): MapperError | null {
   if (typeof v !== "number" || !Number.isFinite(v) || v <= 0) {
-    return { ok: false, field, message: `${field} must be a finite positive number` };
-  }
-  return null;
-}
-
-function finiteNonNeg(v: unknown, field: string): MapperError | null {
-  if (typeof v !== "number" || !Number.isFinite(v) || v < 0) {
-    return { ok: false, field, message: `${field} must be a finite non-negative number` };
+    return {
+      ok: false,
+      field,
+      message: `${field} must be a finite positive number`,
+    };
   }
   return null;
 }
@@ -117,11 +122,16 @@ export function mapWidgetInputsToCanonical(
     typeof inputs.annualGrowthRate !== "number" ||
     !Number.isFinite(inputs.annualGrowthRate)
   ) {
-    return { ok: false, field: "annualGrowthRate", message: "annualGrowthRate must be a finite number" };
+    return {
+      ok: false,
+      field: "annualGrowthRate",
+      message: "annualGrowthRate must be a finite number",
+    };
   }
 
   const floor = overrides?.floor_multiple ?? DEAL_TERMS_DEFAULTS.floor_multiple;
-  const ceiling = overrides?.ceiling_multiple ?? DEAL_TERMS_DEFAULTS.ceiling_multiple;
+  const ceiling =
+    overrides?.ceiling_multiple ?? DEAL_TERMS_DEFAULTS.ceiling_multiple;
 
   err = finitePositive(floor, "floor_multiple");
   if (err) return err;
@@ -130,7 +140,11 @@ export function mapWidgetInputsToCanonical(
   if (err) return err;
 
   if (floor > ceiling) {
-    return { ok: false, field: "floor_multiple", message: "floor_multiple must not exceed ceiling_multiple" };
+    return {
+      ok: false,
+      field: "floor_multiple",
+      message: "floor_multiple must not exceed ceiling_multiple",
+    };
   }
 
   const deal_terms: CanonicalDealTerms = {
@@ -151,7 +165,8 @@ export function mapWidgetInputsToCanonical(
     platform_fee: DEAL_TERMS_DEFAULTS.platform_fee,
     servicing_fee_monthly: DEAL_TERMS_DEFAULTS.servicing_fee_monthly,
     exit_fee_pct: DEAL_TERMS_DEFAULTS.exit_fee_pct,
-    duration_yield_floor_enabled: DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
+    duration_yield_floor_enabled:
+      DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
   };
 
   const scenario: CanonicalScenarioAssumptions = {
@@ -163,12 +178,15 @@ export function mapWidgetInputsToCanonical(
   return { ok: true, data: { deal_terms, scenario } };
 }
 
-export function extractDealTermsDefaultsUsed(
-  overrides?: { floor_multiple?: number; ceiling_multiple?: number },
-): Record<string, unknown> {
+export function extractDealTermsDefaultsUsed(overrides?: {
+  floor_multiple?: number;
+  ceiling_multiple?: number;
+}): Record<string, unknown> {
   return {
-    floor_multiple: overrides?.floor_multiple ?? DEAL_TERMS_DEFAULTS.floor_multiple,
-    ceiling_multiple: overrides?.ceiling_multiple ?? DEAL_TERMS_DEFAULTS.ceiling_multiple,
+    floor_multiple:
+      overrides?.floor_multiple ?? DEAL_TERMS_DEFAULTS.floor_multiple,
+    ceiling_multiple:
+      overrides?.ceiling_multiple ?? DEAL_TERMS_DEFAULTS.ceiling_multiple,
     downside_mode: DEAL_TERMS_DEFAULTS.downside_mode,
     contract_maturity_years: DEAL_TERMS_DEFAULTS.contract_maturity_years,
     source: "canonical_mapper_v10.1",

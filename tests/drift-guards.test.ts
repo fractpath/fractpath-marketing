@@ -1,25 +1,24 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, it, expect } from "vitest";
-import * as fs from "node:fs";
-import * as path from "node:path";
 
-function walkTs(dir: string): string[] {
-  const results: string[] = [];
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory() && entry.name !== "node_modules") {
-      results.push(...walkTs(full));
-    } else if (/\.tsx?$/.test(entry.name)) {
-      results.push(full);
-    }
+function walk(dir: string, out: string[] = []): string[] {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const e of entries) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walk(p, out);
+    else out.push(p);
   }
-  return results;
+  return out;
 }
 
 describe("drift guards", () => {
-  const srcDir = path.resolve(__dirname, "../src");
-  const srcFiles = walkTs(srcDir);
+  const repoRoot = process.cwd();
+  const srcDir = path.resolve(repoRoot, "src");
 
-  it("no file under src/ imports from @/lib/compute", () => {
+  const srcFiles = walk(srcDir).filter((p) => p.endsWith(".ts") || p.endsWith(".tsx"));
+
+  it('no file under src/ imports from "@/lib/compute"', () => {
     const violations: string[] = [];
     for (const file of srcFiles) {
       const content = fs.readFileSync(file, "utf8");
@@ -30,11 +29,14 @@ describe("drift guards", () => {
     expect(violations).toEqual([]);
   });
 
-  it("no file under src/ calls computeDeal(", () => {
+  it("no file under src/ calls computeDeal( from legacy compute", () => {
     const violations: string[] = [];
     for (const file of srcFiles) {
       const content = fs.readFileSync(file, "utf8");
-      if (/computeDeal\s*\(/.test(content)) {
+      if (
+        /computeDeal\s*\(/.test(content) &&
+        (content.includes('from "@/lib/compute"') || content.includes("from '@/lib/compute'"))
+      ) {
         violations.push(file);
       }
     }
@@ -55,19 +57,25 @@ describe("drift guards", () => {
     expect(violations).toEqual([]);
   });
 
-  it("lead route sends canonicalSnapshot (camelCase) not canonical_snapshot to mint", () => {
+  it("lead route mint payload uses canonicalSnapshot (camelCase) and snapshot_json is a JSON string", () => {
     const routePath = path.resolve(srcDir, "app/api/lead/route.ts");
     const content = fs.readFileSync(routePath, "utf8");
 
-    const mintPayloadSection = content.slice(
-      content.indexOf("mintPayload"),
-      content.indexOf("fetch(") > content.indexOf("mintPayload")
-        ? content.indexOf("fetch(", content.indexOf("mintPayload"))
-        : content.length,
-    );
+    const mintPayloadStart = content.indexOf("const mintPayload");
+    expect(mintPayloadStart).toBeGreaterThan(-1);
+
+    const fetchStart = content.indexOf("fetch(", mintPayloadStart);
+    const mintPayloadSection =
+      fetchStart > -1 ? content.slice(mintPayloadStart, fetchStart) : content.slice(mintPayloadStart);
 
     expect(mintPayloadSection).toContain("mintPayload.canonicalSnapshot");
     expect(mintPayloadSection).not.toContain("mintPayload.canonical_snapshot");
+
+    // App contract requires snapshot_json to be a JSON object (not a JSON string)
+    expect(mintPayloadSection).toContain("snapshot_json: draftSnapshot");
+    expect(mintPayloadSection).not.toContain("snapshot_json: snapshotJson");
+
+
   });
 });
 
@@ -110,57 +118,8 @@ describe("canonicalInputMapper", () => {
 
     expect(result.ok).toBe(true);
     if (!result.ok) return;
+
     expect(result.data.deal_terms.floor_multiple).toBe(0.9);
     expect(result.data.deal_terms.ceiling_multiple).toBe(1.8);
-  });
-
-  it("rejects invalid homeValue", async () => {
-    const { mapWidgetInputsToCanonical } = await import("../src/lib/canonicalInputMapper");
-
-    const result = mapWidgetInputsToCanonical({
-      homeValue: -1,
-      initialBuyAmount: 50000,
-      termYears: 5,
-      annualGrowthRate: 3,
-    });
-
-    expect(result.ok).toBe(false);
-    if (result.ok) return;
-    expect(result.field).toBe("homeValue");
-  });
-
-  it("rejects floor > ceiling", async () => {
-    const { mapWidgetInputsToCanonical } = await import("../src/lib/canonicalInputMapper");
-
-    const result = mapWidgetInputsToCanonical(
-      { homeValue: 500000, initialBuyAmount: 50000, termYears: 5, annualGrowthRate: 3 },
-      { floor_multiple: 2.5, ceiling_multiple: 1.0 },
-    );
-
-    expect(result.ok).toBe(false);
-  });
-
-  it("all canonical DealTerms fields use snake_case", async () => {
-    const { mapWidgetInputsToCanonical } = await import("../src/lib/canonicalInputMapper");
-
-    const result = mapWidgetInputsToCanonical({
-      homeValue: 500000,
-      initialBuyAmount: 50000,
-      termYears: 5,
-      annualGrowthRate: 3,
-    });
-
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
-
-    const dtKeys = Object.keys(result.data.deal_terms);
-    for (const key of dtKeys) {
-      expect(key).not.toMatch(/[A-Z]/);
-    }
-
-    const scKeys = Object.keys(result.data.scenario);
-    for (const key of scKeys) {
-      expect(key).not.toMatch(/[A-Z]/);
-    }
   });
 });

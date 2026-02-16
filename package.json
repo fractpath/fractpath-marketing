@@ -6,7 +6,10 @@
     "dev": "next dev --hostname 0.0.0.0 --port 5000",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint \"src/**/*.{ts,tsx,js,jsx}\" \"tests/**/*.{ts,tsx,js,jsx}\"",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ci": "vitest run --reporter=default"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.986.0",

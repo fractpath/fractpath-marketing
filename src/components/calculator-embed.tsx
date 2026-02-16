@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState, type FormEvent } from "react";
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { Component, type ReactNode } from "react";
 import {
   FractPathCalculatorWidget,
   type CalculatorPersona,
@@ -473,7 +473,7 @@ class WidgetErrorBoundary extends Component<
     return { hasError: true };
   }
 
-  componentDidCatch(_error: Error, _info: ErrorInfo) {
+  componentDidCatch() {
     this.props.onError();
   }
 

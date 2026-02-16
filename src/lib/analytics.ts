@@ -16,7 +16,6 @@ export type AnalyticsPayload = Record<string, unknown>;
 
 export function trackEvent(event: unknown) {
   try {
-    // eslint-disable-next-line no-console
     console.log("[analytics:event]", event);
   } catch {
     // no-op
@@ -25,7 +24,6 @@ export function trackEvent(event: unknown) {
 
 export function trackCustomEvent(name: string, payload: AnalyticsPayload = {}) {
   try {
-    // eslint-disable-next-line no-console
     console.log("[analytics:custom]", { name, ...payload });
   } catch {
     // no-op

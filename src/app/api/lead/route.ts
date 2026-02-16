@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { defaultDealTerms } from "@/lib/compute";
+import {
+  extractDealTermsDefaultsUsed,
+  DEAL_TERMS_DEFAULTS,
+} from "@/lib/canonicalInputMapper";
 
 const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
 const HUBSPOT_ENABLED =
@@ -38,14 +41,6 @@ const REQUIRED_SNAPSHOT_KEYS = [
 const FULL_ONLY_KEYS = [
   "full_results",
   "settlements",
-] as const;
-
-const REQUIRED_CANONICAL_KEYS = [
-  "compute_version",
-  "computed_at",
-  "inputs",
-  "assumptions",
-  "outputs",
 ] as const;
 
 function isValidDraftSnapshot(
@@ -129,6 +124,14 @@ function buildSafeCanonicalSnapshot(
   return { safe: t3, size_bytes: sizeBytes, truncated: true };
 }
 
+const REQUIRED_CANONICAL_KEYS = [
+  "compute_version",
+  "computed_at",
+  "inputs",
+  "assumptions",
+  "outputs",
+] as const;
+
 function isValidCanonicalSnapshot(
   snapshot: unknown,
 ): snapshot is Record<string, unknown> {
@@ -154,67 +157,14 @@ function isValidCanonicalSnapshot(
   return true;
 }
 
-function extractDealTermsDefaults(
-  canonicalInputs: Record<string, unknown> | null,
-  draftSnapshot: Record<string, unknown>,
-): Record<string, unknown> {
-  const draftInputs = draftSnapshot.inputs as Record<string, unknown> | undefined;
-
-  const canonicalMaturity =
-    canonicalInputs && typeof canonicalInputs.maturity_months === "number"
-      ? canonicalInputs.maturity_months
-      : canonicalInputs && typeof canonicalInputs.maturityMonths === "number"
-        ? canonicalInputs.maturityMonths
-        : null;
-
-  const draftTermYears = Number(draftInputs?.termYears ?? 5);
-  const draftMaturity = Number(
-    draftInputs?.maturity_months ??
-      draftInputs?.maturityMonths ??
-      draftTermYears * 12,
-  );
-
-  const maturity_months =
-    (canonicalMaturity && canonicalMaturity > 0 ? canonicalMaturity : null) ??
-    (draftMaturity > 0 ? draftMaturity : 60);
-
-  if (canonicalInputs) {
-    return {
-      floor_multiple: canonicalInputs.floor_multiple,
-      ceiling_multiple: canonicalInputs.ceiling_multiple,
-      downside_mode: canonicalInputs.downside_mode,
-      timing_factor_gain_only: canonicalInputs.timing_factor_gain_only,
-      maturity_months,
-      source: "canonical_snapshot",
-    };
-  }
-
-  const iba = Number(draftInputs?.initialBuyAmount ?? draftInputs?.iba_usd ?? 1);
-
-  try {
-    const defaults = defaultDealTerms({
-      iba_usd: iba > 0 ? iba : 1,
-      maturity_months,
-    });
-
-    return {
-      floor_multiple: defaults.floor_multiple,
-      ceiling_multiple: defaults.ceiling_multiple,
-      downside_mode: defaults.downside_mode,
-      timing_factor_gain_only: defaults.timing_factor_gain_only,
-      maturity_months,
-      source: "default_deal_terms",
-    };
-  } catch {
-    return {
-      floor_multiple: 0.8,
-      ceiling_multiple: 2.0,
-      downside_mode: "HARD_FLOOR",
-      timing_factor_gain_only: true,
-      maturity_months,
-      source: "fallback",
-    };
-  }
+function isValidCanonicalInputs(
+  ci: unknown,
+): ci is { deal_terms: Record<string, unknown>; scenario: Record<string, unknown> } {
+  if (typeof ci !== "object" || ci === null || Array.isArray(ci)) return false;
+  const obj = ci as Record<string, unknown>;
+  if (typeof obj.deal_terms !== "object" || obj.deal_terms === null) return false;
+  if (typeof obj.scenario !== "object" || obj.scenario === null) return false;
+  return true;
 }
 
 async function hubspotUpsert(
@@ -308,6 +258,7 @@ export async function POST(request: NextRequest) {
   const persona = typeof body.persona === "string" ? body.persona.trim() : "";
   const draftSnapshot = body.draftSnapshot;
   const rawCanonicalSnapshot = body.canonicalSnapshot;
+  const rawCanonicalInputs = body.canonicalInputs;
 
   if (!email || !email.includes("@")) {
     return NextResponse.json(
@@ -358,14 +309,32 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const canonicalInputs = canonicalSnapshot
-    ? (canonicalSnapshot.inputs as Record<string, unknown>)
-    : null;
+  let canonicalInputs: { deal_terms: Record<string, unknown>; scenario: Record<string, unknown> } | null = null;
+  if (rawCanonicalInputs !== undefined && rawCanonicalInputs !== null) {
+    if (isValidCanonicalInputs(rawCanonicalInputs)) {
+      canonicalInputs = rawCanonicalInputs;
+    } else {
+      console.warn(
+        `[lead] canonicalInputs present but invalid: email=${email}, persona=${persona}`,
+      );
+    }
+  }
 
-  const dealTermsDefaultsUsed = extractDealTermsDefaults(
-    canonicalInputs,
-    draftSnapshot,
-  );
+  const floorFromInputs =
+    canonicalInputs &&
+    typeof canonicalInputs.deal_terms.floor_multiple === "number"
+      ? canonicalInputs.deal_terms.floor_multiple
+      : undefined;
+  const ceilingFromInputs =
+    canonicalInputs &&
+    typeof canonicalInputs.deal_terms.ceiling_multiple === "number"
+      ? canonicalInputs.deal_terms.ceiling_multiple
+      : undefined;
+
+  const dealTermsDefaultsUsed = extractDealTermsDefaultsUsed({
+    floor_multiple: floorFromInputs ?? DEAL_TERMS_DEFAULTS.floor_multiple,
+    ceiling_multiple: ceilingFromInputs ?? DEAL_TERMS_DEFAULTS.ceiling_multiple,
+  });
 
   let safeCanonical: Record<string, unknown> | undefined;
   let canonicalSnapshot_size_bytes: number | undefined;
@@ -389,7 +358,10 @@ export async function POST(request: NextRequest) {
     snapshot_json: draftSnapshot,
   };
   if (canonicalSnapshot) {
-    mintPayload.canonical_snapshot = canonicalSnapshot;
+    mintPayload.canonicalSnapshot = canonicalSnapshot;
+  }
+  if (canonicalInputs) {
+    mintPayload.canonicalInputs = canonicalInputs;
   }
 
   let token: string | null = null;
@@ -442,6 +414,7 @@ export async function POST(request: NextRequest) {
     contract_version: String(draftSnapshot.contract_version),
     deal_terms_defaults_used: dealTermsDefaultsUsed,
     has_canonical_snapshot: canonicalSnapshot !== null,
+    has_canonical_inputs: canonicalInputs !== null,
     canonicalSnapshot_invalid,
     captured_at: new Date().toISOString(),
   };
@@ -450,6 +423,10 @@ export async function POST(request: NextRequest) {
     leadRecord.canonicalSnapshot = safeCanonical;
     leadRecord.canonicalSnapshot_size_bytes = canonicalSnapshot_size_bytes;
     leadRecord.canonicalSnapshot_truncated = canonicalSnapshot_truncated;
+  }
+
+  if (canonicalInputs) {
+    leadRecord.canonicalInputs = canonicalInputs;
   }
 
   console.log("[lead] captured:", JSON.stringify(leadRecord));

@@ -23,6 +23,7 @@ FractPath marketing homepage - a Next.js application for fractional real estate 
   /lib
     utils.ts           - cn() utility for class merging
     analytics.ts       - Analytics event tracking (Plausible-compatible): persona_selected, lead_email_submitted, cta_signup_clicked, cta_contact_clicked, widget events
+    canonicalInputMapper.ts - Maps widget camelCase inputs to canonical v10.1 snake_case deal_terms + scenario; all defaults as constants
   /types
     fractpath-calculator-widget.d.ts - Ambient type declarations mirroring real widget API
 /public
@@ -57,12 +58,12 @@ FractPath marketing homepage - a Next.js application for fractional real estate 
 - Persona tabs only affect the calculator area below the tab controller; all other page sections are server-rendered and static
 
 ## API Routes
-- **POST /api/lead**: Receives { email, persona, draftSnapshot }, validates persona + snapshot structure, rejects full-only fields, HubSpot upsert as non-blocking side effect, returns { resume_token }
+- **POST /api/lead**: Receives { email, persona, draftSnapshot, canonicalInputs?, canonicalSnapshot? }, validates persona + snapshot structure, rejects full-only fields, server-to-server mint via app's draft-tokens/mint (fallback: local UUID), HubSpot upsert as non-blocking side effect, returns { ok, resume_token, token, resumeUrl }
 - **POST /api/share**: Receives { to_email, shareSummary }, generates opaque share_token, sends branded email via SES if configured, returns { share_token }
 
 ## Key Flows
 1. **Persona Selection**: User clicks Homeowner/Buyer/Realtor tab → updates widget persona prop + page content → tracks persona_selected event
-2. **Save & Continue**: Widget emits onDraftSnapshot → email gate UI → POST /api/lead with { email, persona, draftSnapshot } → receive resume_token
+2. **Save & Continue**: Widget emits onDraftSnapshot → canonical input mapper → email gate UI → POST /api/lead with { email, persona, draftSnapshot, canonicalInputs } → server-to-server mint → receive { token, resumeUrl }
 3. **Share**: Widget emits onShareSummary → share email modal → POST /api/share with { to_email, shareSummary } → receive share_token
 
 ## Analytics Events (MKT-011)
@@ -104,7 +105,18 @@ If the upstream widget changes, rebuild the tarball:
 - No invention — all inputs, outputs, labels, events must come from tickets
 - Preserve marketing → app snapshot contract
 
+## Canonical Compute Migration
+- Marketing has ZERO imports of @/lib/compute — legacy bridge file deleted
+- `src/lib/canonicalInputMapper.ts` is the single canonical mapping layer (v10.1.0)
+- All defaults live in DEAL_TERMS_DEFAULTS / SCENARIO_DEFAULTS constants in the mapper
+- Calculator-embed.tsx sends `canonicalInputs` (deal_terms + scenario, snake_case) to /api/lead
+- /api/lead forwards `canonicalSnapshot` (camelCase key, not canonical_snapshot) to app mint
+- /api/lead also accepts and forwards `canonicalInputs` to app mint
+- Drift guard tests in tests/drift-guards.test.ts prevent reintroduction of legacy compute
+- No local recompute in marketing — widget owns UI computation, app owns canonical compute
+
 ## Recent Changes
+- 2026-02-16: Sprint 10 Phase 5B — Canonical v10.1 migration cutover: removed all @/lib/compute imports, deleted legacy bridge, created canonicalInputMapper.ts, fixed mint payload key drift (canonical_snapshot → canonicalSnapshot), added canonicalInputs acceptance in lead route, added 9 drift guard tests
 - 2026-02-13: Fixed /api/lead rejecting widget draftSnapshot — removed input_hash and output_hash from FULL_ONLY_KEYS (they are integrity hashes emitted in marketing mode, not app-only fields). Verified all flows end-to-end.
 - 2026-02-13: Fixed persona scope per WGT-030 guardrails — hero, value props, trust are now static; only calculator area (below tabs) changes with persona. Added console logging to Save & Continue and Share flows for preview debugging. Updated WGT-030-supplement.md.
 - 2026-02-13: Implemented persona content system (MKT-003), wired onShareSummary flow with share email modal, aligned /api/share with MKT-006 contract ({ to_email, shareSummary } → { share_token }), added cta_signup_clicked and cta_contact_clicked analytics (MKT-011), added footer privacy note, created WGT-030-supplement.md documenting gaps

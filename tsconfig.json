@@ -30,5 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "fractpath-calculator-widget-src", "fractpath-marketing"]
+  "exclude": ["node_modules", "fractpath-calculator-widget-src", "fractpath-marketing", "packages/compute/**"]
 }

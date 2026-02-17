@@ -125,7 +125,17 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
 
         if (data.resume_token) {
           console.log("[save-continue] success: resume_token received", { persona, email });
-          setGate({ step: "save_done" });
+
+          const rawResumeUrl = typeof data.resumeUrl === "string" ? data.resumeUrl : "";
+          const appBase = "https://app.fractpath.com";
+          const resumeHref = rawResumeUrl
+            ? rawResumeUrl.startsWith("http")
+              ? rawResumeUrl
+              : appBase + rawResumeUrl
+            : appBase + "/resume?token=" + encodeURIComponent(String(data.resume_token));
+
+          window.location.assign(resumeHref);
+          return;
         } else {
           console.warn("[save-continue] failure:", data.error || "unknown error", { persona, email });
           setGate({

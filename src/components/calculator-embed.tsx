@@ -2,14 +2,20 @@
 
 import { useCallback, useState, type FormEvent } from "react";
 import { Component, type ReactNode } from "react";
-import { FractPathCalculatorWidget, type CalculatorPersona, type DraftSnapshot, type ShareSummary, type WidgetEvent } from "fractpath-calculator-widget";
+import {
+  FractPathCalculatorWidget,
+  type CalculatorPersona,
+  type DraftSnapshot,
+  type ShareSummary,
+  type WidgetEvent,
+} from "fractpath-calculator-widget";
 import {
   DEAL_TERMS_DEFAULTS,
   mapWidgetInputsToCanonical,
 } from "@/lib/canonicalInputMapper";
 
-const APP_BASE_URL = (
-  process.env.NEXT_PUBLIC_FRACTPATH_APP_URL || "https://app.fractpath.com"
+const appBase = String(
+  process.env.NEXT_PUBLIC_FRACTPATH_APP_URL || "https://app.fractpath.com",
 ).replace(/\/+$/, "");
 
 import { Button } from "@/components/ui/button";
@@ -34,18 +40,31 @@ type GateState =
   | { step: "save_gate"; snapshot: DraftSnapshot }
   | { step: "save_submitting"; snapshot: DraftSnapshot; email: string }
   | { step: "save_done" }
-  | { step: "save_error"; message: string; snapshot: DraftSnapshot; email: string }
+  | {
+      step: "save_error";
+      message: string;
+      snapshot: DraftSnapshot;
+      email: string;
+    }
   | { step: "share_gate"; summary: ShareSummary }
   | { step: "share_submitting"; summary: ShareSummary; email: string }
   | { step: "share_done" }
-  | { step: "share_error"; message: string; summary: ShareSummary; email: string };
+  | {
+      step: "share_error";
+      message: string;
+      summary: ShareSummary;
+      email: string;
+    };
 
 type CalculatorEmbedProps = {
   persona: CalculatorPersona;
   onPersonaChange: (persona: CalculatorPersona) => void;
 };
 
-export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedProps) {
+export function CalculatorEmbed({
+  persona,
+  onPersonaChange,
+}: CalculatorEmbedProps) {
   const [gate, setGate] = useState<GateState>({ step: "idle" });
   const [emailInput, setEmailInput] = useState("");
   const [widgetError, setWidgetError] = useState(false);
@@ -91,7 +110,10 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
       const ceiling = Number.parseFloat(ceilingMultiple);
 
       if (!(floor > 0) || !(ceiling > 0) || floor > ceiling) {
-        console.warn("[canonical-mapper] invalid deal terms", { floor, ceiling });
+        console.warn("[canonical-mapper] invalid deal terms", {
+          floor,
+          ceiling,
+        });
         return;
       }
 
@@ -104,7 +126,11 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
       });
 
       if (!mapped.ok) {
-        console.warn("[canonical-mapper] mapping failed:", mapped.field, mapped.message);
+        console.warn(
+          "[canonical-mapper] mapping failed:",
+          mapped.field,
+          mapped.message,
+        );
       }
 
       try {
@@ -129,23 +155,36 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
         const data = await res.json();
 
         if (data.resume_token) {
-          console.log("[save-continue] success: resume_token received", { persona, email });
+          console.log("[save-continue] success: resume_token received", {
+            persona,
+            email,
+          });
 
-          const rawResumeUrl = typeof data.resumeUrl === "string" ? data.resumeUrl : "";
+          const rawResumeUrl =
+            typeof data.resumeUrl === "string" ? data.resumeUrl : "";
           const continueUrl = rawResumeUrl.startsWith("http")
             ? rawResumeUrl
             : rawResumeUrl.startsWith("/")
-              ? `${APP_BASE_URL}${rawResumeUrl}`
-              : `${APP_BASE_URL}/resume?token=${encodeURIComponent(String(data.resume_token))}`;
+              ? `${appBase}${rawResumeUrl}`
+              : `${appBase}/resume?token=${encodeURIComponent(String(data.resume_token))}`;
 
           if (process.env.NODE_ENV !== "production") {
-            console.log("[save-continue] navigation", { appBase: APP_BASE_URL, resumeToken: data.resume_token, continueUrl });
+            console.log("[save-continue] navigation", {
+              appBase,
+              resumeToken: data.resume_token,
+              continueUrl,
+            });
           }
+
 
           window.location.assign(continueUrl);
           return;
         } else {
-          console.warn("[save-continue] failure:", data.error || "unknown error", { persona, email });
+          console.warn(
+            "[save-continue] failure:",
+            data.error || "unknown error",
+            { persona, email },
+          );
           setGate({
             step: "save_error",
             message: data.error || "Something went wrong. Please try again.",
@@ -190,10 +229,14 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
         const data = await res.json();
 
         if (data.share_token || data.ok) {
-          console.log("[share] success: share_token received", { to_email: email });
+          console.log("[share] success: share_token received", {
+            to_email: email,
+          });
           setGate({ step: "share_done" });
         } else {
-          console.warn("[share] failure:", data.error || "unknown error", { to_email: email });
+          console.warn("[share] failure:", data.error || "unknown error", {
+            to_email: email,
+          });
           setGate({
             step: "share_error",
             message: data.error || "Something went wrong. Please try again.",
@@ -247,17 +290,17 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
           </Button>
         ))}
       </div>
-        <div className="mx-auto max-w-[920px]">
-          <WidgetErrorBoundary onError={() => setWidgetError(true)}>
-            <FractPathCalculatorWidget
-              persona={persona}
-              mode="marketing"
-              onDraftSnapshot={handleDraftSnapshot}
-              onShareSummary={handleShareSummary}
-              onEvent={handleEvent}
-            />
-          </WidgetErrorBoundary>
-        </div>
+      <div className="mx-auto max-w-[920px]">
+        <WidgetErrorBoundary onError={() => setWidgetError(true)}>
+          <FractPathCalculatorWidget
+            persona={persona}
+            mode="marketing"
+            onDraftSnapshot={handleDraftSnapshot}
+            onShareSummary={handleShareSummary}
+            onEvent={handleEvent}
+          />
+        </WidgetErrorBoundary>
+      </div>
 
       {gate.step === "save_gate" && (
         <Card className="mx-auto max-w-md rounded-2xl border-primary/20 shadow-md">
@@ -266,7 +309,8 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
               <div className="text-center">
                 <h3 className="text-lg font-semibold">Save Your Scenario</h3>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Enter your email to save this scenario and continue in the app.
+                  Enter your email to save this scenario and continue in the
+                  app.
                 </p>
               </div>
               <div className="space-y-2">
@@ -364,7 +408,8 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
         </Card>
       )}
 
-      {(gate.step === "save_submitting" || gate.step === "share_submitting") && (
+      {(gate.step === "save_submitting" ||
+        gate.step === "share_submitting") && (
         <Card className="mx-auto max-w-md rounded-2xl">
           <CardContent className="flex items-center justify-center gap-3 p-6">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -399,7 +444,8 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
         <Card className="mx-auto max-w-md rounded-2xl border-green-500/20">
           <CardContent className="p-6 text-center">
             <p className="text-sm font-medium text-green-700 dark:text-green-400">
-              Shared! The recipient will receive an illustrative scenario summary.
+              Shared! The recipient will receive an illustrative scenario
+              summary.
             </p>
             <Button
               variant="ghost"

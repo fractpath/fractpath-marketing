@@ -8,9 +8,9 @@ const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
 const HUBSPOT_ENABLED =
   (process.env.HUBSPOT_ENABLED || "").toLowerCase() === "true";
 
-const FRACTPATH_APP_URL = (
+const FRACTPATH_APP_URL = String(
   process.env.FRACTPATH_APP_URL || "https://app.fractpath.com"
-).trim();
+).replace(/\/+$/, "");
 
 const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW = 60_000;
@@ -157,9 +157,7 @@ async function hubspotUpsert(
         body: JSON.stringify({
           filterGroups: [
             {
-              filters: [
-                { propertyName: "email", operator: "EQ", value: email },
-              ],
+              filters: [{ propertyName: "email", operator: "EQ", value: email }],
             },
           ],
         }),
@@ -219,6 +217,7 @@ export async function POST(request: NextRequest) {
       { error: "Valid email required" },
       { status: 400 },
     );
+
   if (
     !persona ||
     !VALID_PERSONAS.includes(persona as (typeof VALID_PERSONAS)[number])
@@ -233,6 +232,7 @@ export async function POST(request: NextRequest) {
       { error: "Invalid draftSnapshot: missing required fields" },
       { status: 422 },
     );
+
   if (containsFullOnlyKeys(draftSnapshot))
     return NextResponse.json(
       { error: "Rejected: payload contains full-only fields" },
@@ -245,6 +245,7 @@ export async function POST(request: NextRequest) {
   let token: string | null = null;
   let resumeUrl: string | null = null;
   let mintSource = "local_fallback";
+
   try {
     const mintRes = await fetch(`${FRACTPATH_APP_URL}/api/draft-tokens/mint`, {
       method: "POST",
@@ -257,6 +258,7 @@ export async function POST(request: NextRequest) {
       }),
       signal: AbortSignal.timeout(5000),
     });
+
     if (mintRes.ok) {
       const mintData = (await mintRes.json()) as Record<string, unknown>;
       token = typeof mintData.token === "string" ? mintData.token : null;
@@ -290,7 +292,7 @@ export async function POST(request: NextRequest) {
       resume_token: token,
       resumeUrl,
       mint_source: mintSource,
-      contract_version: String(draftSnapshot.contract_version),
+      contract_version: String((draftSnapshot as any).contract_version),
       has_canonical_snapshot: rawCanonicalSnapshot !== null,
       has_canonical_inputs: rawCanonicalInputs !== null,
     },

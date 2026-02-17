@@ -111,7 +111,7 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
 
       try {
         const draftSnapshotForLead = Object.assign({}, gate.snapshot, {
-          schema_version: 1,
+          schema_version: "1",
           contract_version: "10.1.0",
         });
 

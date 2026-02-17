@@ -4,7 +4,7 @@ expertMode = true
 
 [nix]
 channel = "stable-25_05"
-packages = ["gh", "tambura", "nano"]
+packages = ["gh", "tambura", "nano", "lsof", "psmisc"]
 
 [[ports]]
 localPort = 3000
@@ -52,3 +52,4 @@ run = ["npm", "run", "start"]
 
 [userenv.shared]
 FRACTPATH_APP_URL = "https://app.fractpath.com"
+NEXT_PUBLIC_FRACTPATH_APP_URL = "https://app.fractpath.com"

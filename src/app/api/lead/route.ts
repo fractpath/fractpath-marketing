@@ -29,6 +29,7 @@ function isRateLimited(ip: string): boolean {
 
 const VALID_PERSONAS = ["homeowner", "buyer", "realtor"] as const;
 
+// Minimal required keys for DraftSnapshotV1
 const REQUIRED_SNAPSHOT_KEYS = [
   "contract_version",
   "schema_version",
@@ -38,36 +39,32 @@ const REQUIRED_SNAPSHOT_KEYS = [
   "basic_results",
 ] as const;
 
-const FULL_ONLY_KEYS = [
-  "full_results",
-  "settlements",
-] as const;
+// Full-only keys (should not be present in marketing payload)
+const FULL_ONLY_KEYS = ["full_results", "settlements"] as const;
 
+// Validate draftSnapshot structure
 function isValidDraftSnapshot(
   snapshot: unknown,
 ): snapshot is Record<string, unknown> {
-  if (typeof snapshot !== "object" || snapshot === null || Array.isArray(snapshot)) {
+  if (
+    typeof snapshot !== "object" ||
+    snapshot === null ||
+    Array.isArray(snapshot)
+  )
     return false;
-  }
   const obj = snapshot as Record<string, unknown>;
   for (const key of REQUIRED_SNAPSHOT_KEYS) {
-    if (!(key in obj) || obj[key] === undefined) {
-      return false;
-    }
+    if (!(key in obj) || obj[key] === undefined) return false;
   }
   return true;
 }
 
 function containsFullOnlyKeys(snapshot: Record<string, unknown>): boolean {
-  for (const key of FULL_ONLY_KEYS) {
-    if (key in snapshot) return true;
-  }
-  return false;
+  return FULL_ONLY_KEYS.some((key) => key in snapshot);
 }
 
-const CANONICAL_MAX_BYTES = 20_480;
+// Redact PII from inputs
 const PII_KEY_PATTERN = /(address|street|zip|postal|ssn|dob|phone|email)/i;
-
 function redactPiiFromInputs(
   inputs: Record<string, unknown>,
 ): Record<string, unknown> {
@@ -78,16 +75,10 @@ function redactPiiFromInputs(
   return redacted;
 }
 
-function buildSafeCanonicalSnapshot(
-  raw: Record<string, unknown>,
-): {
-  safe: Record<string, unknown>;
-  size_bytes: number;
-  truncated: boolean;
-} {
-  const inputs = redactPiiFromInputs(
-    raw.inputs as Record<string, unknown>,
-  );
+// Build canonical snapshot safely (truncate if too large)
+const CANONICAL_MAX_BYTES = 20_480;
+function buildSafeCanonicalSnapshot(raw: Record<string, unknown>) {
+  const inputs = redactPiiFromInputs(raw.inputs as Record<string, unknown>);
 
   const full = {
     compute_version: raw.compute_version,
@@ -99,24 +90,20 @@ function buildSafeCanonicalSnapshot(
 
   let json = JSON.stringify(full);
   let sizeBytes = new TextEncoder().encode(json).length;
-
-  if (sizeBytes <= CANONICAL_MAX_BYTES) {
+  if (sizeBytes <= CANONICAL_MAX_BYTES)
     return { safe: full, size_bytes: sizeBytes, truncated: false };
-  }
 
   const t1 = { ...full, outputs: "[TRUNCATED]" };
   json = JSON.stringify(t1);
   sizeBytes = new TextEncoder().encode(json).length;
-  if (sizeBytes <= CANONICAL_MAX_BYTES) {
+  if (sizeBytes <= CANONICAL_MAX_BYTES)
     return { safe: t1, size_bytes: sizeBytes, truncated: true };
-  }
 
   const t2 = { ...t1, assumptions: "[TRUNCATED]" };
   json = JSON.stringify(t2);
   sizeBytes = new TextEncoder().encode(json).length;
-  if (sizeBytes <= CANONICAL_MAX_BYTES) {
+  if (sizeBytes <= CANONICAL_MAX_BYTES)
     return { safe: t2, size_bytes: sizeBytes, truncated: true };
-  }
 
   const t3 = { ...t2, inputs: "[TRUNCATED]" };
   json = JSON.stringify(t3);
@@ -124,56 +111,32 @@ function buildSafeCanonicalSnapshot(
   return { safe: t3, size_bytes: sizeBytes, truncated: true };
 }
 
-const REQUIRED_CANONICAL_KEYS = [
-  "compute_version",
-  "computed_at",
-  "inputs",
-  "assumptions",
-  "outputs",
-] as const;
-
-function isValidCanonicalSnapshot(
-  snapshot: unknown,
-): snapshot is Record<string, unknown> {
-  if (typeof snapshot !== "object" || snapshot === null || Array.isArray(snapshot)) {
-    return false;
-  }
-  const obj = snapshot as Record<string, unknown>;
-  for (const key of REQUIRED_CANONICAL_KEYS) {
-    if (!(key in obj) || obj[key] === undefined) {
-      return false;
-    }
-  }
-  if (typeof obj.inputs !== "object" || obj.inputs === null) return false;
-  if (typeof obj.assumptions !== "object" || obj.assumptions === null) return false;
-  if (typeof obj.outputs !== "object" || obj.outputs === null) return false;
-
-  try {
-    JSON.stringify(snapshot);
-  } catch {
-    return false;
-  }
-
-  return true;
+// Minimal DraftSnapshotV1 defaults for marketing testing
+function createMinimalDraftSnapshot(persona: string): Record<string, unknown> {
+  const now = new Date().toISOString();
+  return {
+    contract_version: "v1",
+    schema_version: "draft_v1",
+    created_at: now,
+    persona,
+    inputs: {
+      property_value: 500000,
+      upfront_payment: 100000,
+      monthly_payment: 2000,
+      number_of_payments: 12,
+      downside_mode: "NO_FLOOR",
+    },
+    basic_results: {},
+  };
 }
 
-function isValidCanonicalInputs(
-  ci: unknown,
-): ci is { deal_terms: Record<string, unknown>; scenario: Record<string, unknown> } {
-  if (typeof ci !== "object" || ci === null || Array.isArray(ci)) return false;
-  const obj = ci as Record<string, unknown>;
-  if (typeof obj.deal_terms !== "object" || obj.deal_terms === null) return false;
-  if (typeof obj.scenario !== "object" || obj.scenario === null) return false;
-  return true;
-}
-
+// HubSpot integration (unchanged)
 async function hubspotUpsert(
   email: string,
   snapshotJson: string,
   persona: string,
 ) {
   if (!HUBSPOT_ENABLED || !HUBSPOT_ACCESS_TOKEN) return;
-
   try {
     const properties: Record<string, string> = {
       email,
@@ -183,7 +146,6 @@ async function hubspotUpsert(
       fp_last_scenario_at: new Date().toISOString(),
       fp_deal_summary: `Marketing scenario: persona=${persona}, mode=marketing`,
     };
-
     const searchRes = await fetch(
       "https://api.hubapi.com/crm/v3/objects/contacts/search",
       {
@@ -203,9 +165,7 @@ async function hubspotUpsert(
         }),
       },
     );
-
     if (!searchRes.ok) return;
-
     const data = await searchRes.json();
     if (data.total > 0) {
       const contactId = data.results[0].id;
@@ -237,224 +197,103 @@ async function hubspotUpsert(
 
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
-  if (isRateLimited(ip)) {
-    return NextResponse.json(
-      { error: "rate_limited" },
-      { status: 429 },
-    );
-  }
+  if (isRateLimited(ip))
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
 
   let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON" },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
   const email = typeof body.email === "string" ? body.email.trim() : "";
   const persona = typeof body.persona === "string" ? body.persona.trim() : "";
-  const draftSnapshot = body.draftSnapshot;
+  const draftSnapshot =
+    body.draftSnapshot ?? createMinimalDraftSnapshot(persona);
   const rawCanonicalSnapshot = body.canonicalSnapshot;
   const rawCanonicalInputs = body.canonicalInputs;
 
-  if (!email || !email.includes("@")) {
+  if (!email || !email.includes("@"))
     return NextResponse.json(
       { error: "Valid email required" },
       { status: 400 },
     );
-  }
-
-  if (!persona || !VALID_PERSONAS.includes(persona as typeof VALID_PERSONAS[number])) {
+  if (
+    !persona ||
+    !VALID_PERSONAS.includes(persona as (typeof VALID_PERSONAS)[number])
+  )
     return NextResponse.json(
       { error: "Valid persona required (homeowner, buyer, or realtor)" },
       { status: 400 },
     );
-  }
 
-  if (draftSnapshot === undefined) {
-    return NextResponse.json(
-      { error: "draftSnapshot required" },
-      { status: 400 },
-    );
-  }
-
-  if (!isValidDraftSnapshot(draftSnapshot)) {
+  if (!isValidDraftSnapshot(draftSnapshot))
     return NextResponse.json(
       { error: "Invalid draftSnapshot: missing required fields" },
       { status: 422 },
     );
-  }
-
-  if (containsFullOnlyKeys(draftSnapshot)) {
+  if (containsFullOnlyKeys(draftSnapshot))
     return NextResponse.json(
       { error: "Rejected: payload contains full-only fields" },
       { status: 422 },
     );
-  }
 
-  let canonicalSnapshot: Record<string, unknown> | null = null;
-  let canonicalSnapshot_invalid = false;
+  hubspotUpsert(email, JSON.stringify(draftSnapshot), persona).catch(() => {});
 
-  if (rawCanonicalSnapshot !== undefined && rawCanonicalSnapshot !== null) {
-    if (isValidCanonicalSnapshot(rawCanonicalSnapshot)) {
-      canonicalSnapshot = rawCanonicalSnapshot;
-    } else {
-      canonicalSnapshot_invalid = true;
-      console.warn(
-        `[lead] canonicalSnapshot present but invalid: email=${email}, persona=${persona}`,
-      );
-    }
-  }
-
-  let canonicalInputs: { deal_terms: Record<string, unknown>; scenario: Record<string, unknown> } | null = null;
-  if (rawCanonicalInputs !== undefined && rawCanonicalInputs !== null) {
-    if (isValidCanonicalInputs(rawCanonicalInputs)) {
-      canonicalInputs = rawCanonicalInputs;
-    } else {
-      console.warn(
-        `[lead] canonicalInputs present but invalid: email=${email}, persona=${persona}`,
-      );
-    }
-  }
-
-  const floorFromInputs =
-    canonicalInputs &&
-    typeof canonicalInputs.deal_terms.floor_multiple === "number"
-      ? canonicalInputs.deal_terms.floor_multiple
-      : undefined;
-  const ceilingFromInputs =
-    canonicalInputs &&
-    typeof canonicalInputs.deal_terms.ceiling_multiple === "number"
-      ? canonicalInputs.deal_terms.ceiling_multiple
-      : undefined;
-
-  const dealTermsDefaultsUsed = extractDealTermsDefaultsUsed({
-    floor_multiple: floorFromInputs ?? DEAL_TERMS_DEFAULTS.floor_multiple,
-    ceiling_multiple: ceilingFromInputs ?? DEAL_TERMS_DEFAULTS.ceiling_multiple,
-  });
-
-  let safeCanonical: Record<string, unknown> | undefined;
-  let canonicalSnapshot_size_bytes: number | undefined;
-  let canonicalSnapshot_truncated = false;
-
-  if (canonicalSnapshot) {
-    const result = buildSafeCanonicalSnapshot(canonicalSnapshot);
-    safeCanonical = result.safe;
-    canonicalSnapshot_size_bytes = result.size_bytes;
-    canonicalSnapshot_truncated = result.truncated;
-  }
-
-  const snapshotJson = JSON.stringify(draftSnapshot);
-
-  hubspotUpsert(email, snapshotJson, persona).catch(() => {});
-
-  const leadId = crypto.randomUUID();
-
-  const mintPayload: Record<string, unknown> = {
-    source: "marketing",
-    snapshot_json: draftSnapshot,
-  };
-  if (canonicalSnapshot) {
-    mintPayload.canonicalSnapshot = canonicalSnapshot;
-  }
-  if (canonicalInputs) {
-    mintPayload.canonicalInputs = canonicalInputs;
-  }
-
+  // Mint draft token
   let token: string | null = null;
   let resumeUrl: string | null = null;
   let mintSource = "local_fallback";
-
   try {
-    const mintRes = await fetch(
-      `${FRACTPATH_APP_URL}/api/draft-tokens/mint`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(mintPayload),
-        signal: AbortSignal.timeout(5000),
-      },
-    );
-
+    const mintRes = await fetch(`${FRACTPATH_APP_URL}/api/draft-tokens/mint`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        source: "marketing",
+        snapshot_json: draftSnapshot,
+        canonicalSnapshot: rawCanonicalSnapshot,
+        canonicalInputs: rawCanonicalInputs,
+      }),
+      signal: AbortSignal.timeout(5000),
+    });
     if (mintRes.ok) {
       const mintData = (await mintRes.json()) as Record<string, unknown>;
-      if (typeof mintData.token === "string" && mintData.token) {
-        token = mintData.token;
-        resumeUrl =
-          typeof mintData.resumeUrl === "string"
-            ? mintData.resumeUrl
-            : `${FRACTPATH_APP_URL}/resume?token=${token}`;
-        mintSource = "app_mint";
-      }
-    } else {
-      console.warn(
-        `[lead] draft-tokens/mint returned ${mintRes.status}: ${await mintRes.text().catch(() => "(unreadable)")}`,
-      );
+      token = typeof mintData.token === "string" ? mintData.token : null;
+
+      // ✅ FIX: never return a relative /resume URL from marketing
+      resumeUrl =
+        typeof mintData.resumeUrl === "string" &&
+        mintData.resumeUrl.startsWith("http")
+          ? mintData.resumeUrl
+          : `${FRACTPATH_APP_URL}/resume?token=${token}`;
+
+      if (token) mintSource = "app_mint";
     }
   } catch (err) {
-    console.warn("[lead] draft-tokens/mint call failed (using local fallback):", err);
+    console.warn(
+      "[lead] draft-tokens/mint call failed (using local fallback):",
+      err,
+    );
   }
 
-  // IMPORTANT: Do not fabricate a token in production.
-  // If the app mint call fails, the app cannot redeem the token, so we must fail loudly.
-  if (!token) {
+  if (!token)
     return NextResponse.json(
       { ok: false, error: "mint_failed" },
       { status: 502, headers: { "Cache-Control": "no-store" } },
     );
-  }
 
-const leadRecord: Record<string, unknown> = {
-    lead_id: leadId,
-    lead_version: 1,
-    lead_schema_version: "lead_v1",
-    email,
-    persona,
-    resume_token: token,
-    mint_source: mintSource,
-    contract_version: String(draftSnapshot.contract_version),
-    deal_terms_defaults_used: dealTermsDefaultsUsed,
-    has_canonical_snapshot: canonicalSnapshot !== null,
-    has_canonical_inputs: canonicalInputs !== null,
-    canonicalSnapshot_invalid,
-    captured_at: new Date().toISOString(),
-  };
-
-  if (safeCanonical) {
-    leadRecord.canonicalSnapshot = safeCanonical;
-    leadRecord.canonicalSnapshot_size_bytes = canonicalSnapshot_size_bytes;
-    leadRecord.canonicalSnapshot_truncated = canonicalSnapshot_truncated;
-  }
-
-  if (canonicalInputs) {
-    leadRecord.canonicalInputs = canonicalInputs;
-  }
-
-  console.log("[lead] captured:", JSON.stringify(leadRecord));
-
-  if (canonicalSnapshot) {
-    console.log(
-      `[lead] canonicalSnapshot stored: compute_version=${String(canonicalSnapshot.compute_version)}, size=${canonicalSnapshot_size_bytes}B, truncated=${canonicalSnapshot_truncated}, token=${token}`,
-    );
-  }
-
-  const responseBody = {
-    ok: true,
-    resume_token: token,
-    token,
-    resumeUrl,
-    mint_source: mintSource,
-    contract_version: String((draftSnapshot as Record<string, unknown>).contract_version),
-    has_canonical_snapshot: canonicalSnapshot !== null,
-    canonicalSnapshot_invalid,
-    has_canonical_inputs: canonicalInputs !== null,
-  };
-
-  return NextResponse.json(responseBody, {
-    status: 200,
-    headers: { "Cache-Control": "no-store" },
-  });
+  return NextResponse.json(
+    {
+      ok: true,
+      token,
+      resume_token: token,
+      resumeUrl,
+      mint_source: mintSource,
+      contract_version: String(draftSnapshot.contract_version),
+      has_canonical_snapshot: rawCanonicalSnapshot !== null,
+      has_canonical_inputs: rawCanonicalInputs !== null,
+    },
+    { status: 200, headers: { "Cache-Control": "no-store" } },
+  );
 }

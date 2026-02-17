@@ -2,17 +2,15 @@
 
 import { useCallback, useState, type FormEvent } from "react";
 import { Component, type ReactNode } from "react";
-import {
-  FractPathCalculatorWidget,
-  type CalculatorPersona,
-  type DraftSnapshot,
-  type ShareSummary,
-  type WidgetEvent,
-} from "fractpath-calculator-widget";
+import { FractPathCalculatorWidget, type CalculatorPersona, type DraftSnapshot, type ShareSummary, type WidgetEvent } from "fractpath-calculator-widget";
 import {
   DEAL_TERMS_DEFAULTS,
   mapWidgetInputsToCanonical,
 } from "@/lib/canonicalInputMapper";
+
+const APP_BASE_URL = (
+  process.env.NEXT_PUBLIC_FRACTPATH_APP_URL || "https://app.fractpath.com"
+).replace(/\/+$/, "");
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -134,14 +132,17 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
           console.log("[save-continue] success: resume_token received", { persona, email });
 
           const rawResumeUrl = typeof data.resumeUrl === "string" ? data.resumeUrl : "";
-          const appBase = "https://app.fractpath.com";
-          const resumeHref = rawResumeUrl
-            ? rawResumeUrl.startsWith("http")
-              ? rawResumeUrl
-              : appBase + rawResumeUrl
-            : appBase + "/resume?token=" + encodeURIComponent(String(data.resume_token));
+          const continueUrl = rawResumeUrl.startsWith("http")
+            ? rawResumeUrl
+            : rawResumeUrl.startsWith("/")
+              ? `${APP_BASE_URL}${rawResumeUrl}`
+              : `${APP_BASE_URL}/resume?token=${encodeURIComponent(String(data.resume_token))}`;
 
-          window.location.assign(resumeHref);
+          if (process.env.NODE_ENV !== "production") {
+            console.log("[save-continue] navigation", { appBase: APP_BASE_URL, resumeToken: data.resume_token, continueUrl });
+          }
+
+          window.location.assign(continueUrl);
           return;
         } else {
           console.warn("[save-continue] failure:", data.error || "unknown error", { persona, email });
@@ -246,18 +247,17 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
           </Button>
         ))}
       </div>
-
-      <div className="mx-auto max-w-[920px]">
-        <WidgetErrorBoundary onError={() => setWidgetError(true)}>
-          <FractPathCalculatorWidget
-            persona={persona}
-            mode="marketing"
-            onDraftSnapshot={handleDraftSnapshot}
-            onShareSummary={handleShareSummary}
-            onEvent={handleEvent}
-          />
-        </WidgetErrorBoundary>
-      </div>
+        <div className="mx-auto max-w-[920px]">
+          <WidgetErrorBoundary onError={() => setWidgetError(true)}>
+            <FractPathCalculatorWidget
+              persona={persona}
+              mode="marketing"
+              onDraftSnapshot={handleDraftSnapshot}
+              onShareSummary={handleShareSummary}
+              onEvent={handleEvent}
+            />
+          </WidgetErrorBoundary>
+        </div>
 
       {gate.step === "save_gate" && (
         <Card className="mx-auto max-w-md rounded-2xl border-primary/20 shadow-md">

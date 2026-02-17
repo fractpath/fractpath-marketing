@@ -1,22 +1,27 @@
 import type { NextConfig } from "next";
 
-const allowedOrigins: string[] = [
-  "http://127.0.0.1:5000",
-  "http://localhost:5000",
-  "http://0.0.0.0:5000",
+const replitDomain = process.env.REPLIT_DEV_DOMAIN || "";
+
+const allowedDevHosts: string[] = [
+  // local dev hosts (NO scheme, NO port)
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
 ];
-if (process.env.REPLIT_DEV_DOMAIN) {
-  allowedOrigins.push(`https://${process.env.REPLIT_DEV_DOMAIN}`);
-}
+
+// Replit host (NO scheme)
+if (replitDomain) allowedDevHosts.push(replitDomain);
+
+// Any additional Replit hosts (NO scheme)
 if (process.env.REPLIT_DOMAINS) {
-  process.env.REPLIT_DOMAINS.split(",").forEach((d) => {
-    allowedOrigins.push(`https://${d.trim()}`);
-  });
+  process.env.REPLIT_DOMAINS.split(",")
+    .map((d) => d.trim())
+    .filter(Boolean)
+    .forEach((d) => allowedDevHosts.push(d));
 }
 
 const nextConfig: NextConfig = {
-  allowedDevOrigins: ["*.replit.dev", "*.repl.co", ...allowedOrigins],
-  transpilePackages: ["fractpath-calculator-widget"],
+  allowedDevOrigins: [...allowedDevHosts, "*.replit.dev", "*.repl.co"],
 };
 
 export default nextConfig;

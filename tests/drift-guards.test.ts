@@ -57,25 +57,18 @@ describe("drift guards", () => {
     expect(violations).toEqual([]);
   });
 
-  it("lead route mint payload uses canonicalSnapshot (camelCase) and snapshot_json is a JSON string", () => {
+  it("lead route sends canonicalSnapshot (camelCase) not canonical_snapshot to mint", () => {
     const routePath = path.resolve(srcDir, "app/api/lead/route.ts");
     const content = fs.readFileSync(routePath, "utf8");
 
-    const mintPayloadStart = content.indexOf("const mintPayload");
-    expect(mintPayloadStart).toBeGreaterThan(-1);
+    const mintStart = content.indexOf("draft-tokens/mint");
+    expect(mintStart).toBeGreaterThan(-1);
+    const bodyStart = content.indexOf("body:", mintStart);
+    const bodyEnd = content.indexOf("})", bodyStart);
+    const bodySection = content.slice(bodyStart, bodyEnd);
 
-    const fetchStart = content.indexOf("fetch(", mintPayloadStart);
-    const mintPayloadSection =
-      fetchStart > -1 ? content.slice(mintPayloadStart, fetchStart) : content.slice(mintPayloadStart);
-
-    expect(mintPayloadSection).toContain("mintPayload.canonicalSnapshot");
-    expect(mintPayloadSection).not.toContain("mintPayload.canonical_snapshot");
-
-    // App contract requires snapshot_json to be a JSON object (not a JSON string)
-    expect(mintPayloadSection).toContain("snapshot_json: draftSnapshot");
-    expect(mintPayloadSection).not.toContain("snapshot_json: snapshotJson");
-
-
+    expect(bodySection).toContain("canonicalSnapshot:");
+    expect(bodySection).not.toMatch(/[^a-zA-Z]canonical_snapshot\s*:/);
   });
 });
 

@@ -114,6 +114,7 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
           schema_version: "1",
           contract_version: "10.1.0",
           engine_version: "10.1.0",
+          calculator_schema_version: "1",
         });
 
         const res = await fetch("/api/lead", {

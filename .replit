@@ -51,5 +51,11 @@ run = ["npm", "run", "start"]
 [userenv]
 
 [userenv.shared]
+
+[userenv.development]
+FRACTPATH_APP_URL = "https://e65d6c0f-2424-4792-91b7-dbc5497fad14-00-3p7hkgjzlnfo9.spock.replit.dev"
+NEXT_PUBLIC_FRACTPATH_APP_URL = "https://e65d6c0f-2424-4792-91b7-dbc5497fad14-00-3p7hkgjzlnfo9.spock.replit.dev"
+
+[userenv.production]
 FRACTPATH_APP_URL = "https://app.fractpath.com"
 NEXT_PUBLIC_FRACTPATH_APP_URL = "https://app.fractpath.com"

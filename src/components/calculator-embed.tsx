@@ -110,13 +110,18 @@ export function CalculatorEmbed({ persona, onPersonaChange }: CalculatorEmbedPro
       }
 
       try {
+        const draftSnapshotForLead = Object.assign({}, gate.snapshot, {
+          schema_version: 1,
+          contract_version: "10.1.0",
+        });
+
         const res = await fetch("/api/lead", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email,
             persona,
-            draftSnapshot: gate.snapshot,
+            draftSnapshot: draftSnapshotForLead,
             canonicalInputs: mapped.ok ? mapped.data : undefined,
           }),
         });

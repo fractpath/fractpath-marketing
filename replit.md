@@ -89,7 +89,8 @@ If the upstream widget changes, rebuild the tarball:
 6. Update `src/types/fractpath-calculator-widget.d.ts` if the widget API changed
 
 ## Environment Variables
-- `FRACTPATH_APP_URL` — Base URL for the FractPath app (default: https://app.fractpath.com)
+- `FRACTPATH_APP_URL` — Base URL for the FractPath app, used server-side for mint calls and resumeUrl construction (default: https://app.fractpath.com)
+- `NEXT_PUBLIC_FRACTPATH_APP_URL` — Base URL for the FractPath app, used client-side for Save & Continue navigation (default: https://app.fractpath.com). For Replit dev, set to the app project's public Replit URL.
 - `FRACTPATH_BASE_URL` — Base URL for marketing share links (default: https://fractpath.com)
 - `HUBSPOT_ACCESS_TOKEN` — (Secret) For lead CRM upsert (non-blocking side effect)
 - `HUBSPOT_ENABLED` — Set to "true" to enable HubSpot upsert
@@ -116,6 +117,7 @@ If the upstream widget changes, rebuild the tarball:
 - No local recompute in marketing — widget owns UI computation, app owns canonical compute
 
 ## Recent Changes
+- 2026-02-17: Hardened Save & Continue resume URL — client-side URL construction now uses NEXT_PUBLIC_FRACTPATH_APP_URL env var instead of hardcoded app base; server-side /api/lead always returns absolute resumeUrl; dev-only console.log for navigation debugging
 - 2026-02-16: Sprint 10 Phase 5B — Canonical v10.1 migration cutover: removed all @/lib/compute imports, deleted legacy bridge, created canonicalInputMapper.ts, fixed mint payload key drift (canonical_snapshot → canonicalSnapshot), added canonicalInputs acceptance in lead route, added 9 drift guard tests
 - 2026-02-13: Fixed /api/lead rejecting widget draftSnapshot — removed input_hash and output_hash from FULL_ONLY_KEYS (they are integrity hashes emitted in marketing mode, not app-only fields). Verified all flows end-to-end.
 - 2026-02-13: Fixed persona scope per WGT-030 guardrails — hero, value props, trust are now static; only calculator area (below tabs) changes with persona. Added console logging to Save & Continue and Share flows for preview debugging. Updated WGT-030-supplement.md.

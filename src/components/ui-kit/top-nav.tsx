@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Container } from "./container";
 import { Menu, X } from "lucide-react";
 import { trackCustomEvent } from "@/lib/analytics";
+import { getAppBaseUrlClient } from "@/lib/appBaseUrl";
 
 const navLinks = [
   { label: "How It Works", href: "#how-it-works" },
@@ -15,6 +16,7 @@ const navLinks = [
 
 export function TopNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const APP = getAppBaseUrlClient();
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
@@ -40,15 +42,17 @@ export function TopNav() {
                 {link.label}
               </a>
             ))}
+
             <a
-              href="https://app.fractpath.com/login"
+              href={`${APP}/login`}
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               Login
             </a>
+
             <Button asChild size="sm">
               <a
-                href="https://app.fractpath.com/signup"
+                href={`${APP}/signup`}
                 onClick={() =>
                   trackCustomEvent("cta_signup_clicked", { location: "nav" })
                 }
@@ -63,7 +67,11 @@ export function TopNav() {
             onClick={() => setMobileOpen(!mobileOpen)}
             aria-label="Toggle menu"
           >
-            {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            {mobileOpen ? (
+              <X className="h-6 w-6" />
+            ) : (
+              <Menu className="h-6 w-6" />
+            )}
           </button>
         </nav>
 
@@ -80,15 +88,17 @@ export function TopNav() {
                   {link.label}
                 </a>
               ))}
+
               <a
-                href="https://app.fractpath.com/login"
+                href={`${APP}/login`}
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 Login
               </a>
+
               <Button asChild size="sm" className="w-fit">
                 <a
-                  href="https://app.fractpath.com/signup"
+                  href={`${APP}/signup`}
                   onClick={() =>
                     trackCustomEvent("cta_signup_clicked", { location: "nav" })
                   }

@@ -398,12 +398,16 @@ export async function POST(request: NextRequest) {
     console.warn("[lead] draft-tokens/mint call failed (using local fallback):", err);
   }
 
+  // IMPORTANT: Do not fabricate a token in production.
+  // If the app mint call fails, the app cannot redeem the token, so we must fail loudly.
   if (!token) {
-    token = crypto.randomUUID();
-    resumeUrl = `${FRACTPATH_APP_URL}/resume?token=${token}`;
+    return NextResponse.json(
+      { ok: false, error: "mint_failed" },
+      { status: 502, headers: { "Cache-Control": "no-store" } },
+    );
   }
 
-  const leadRecord: Record<string, unknown> = {
+const leadRecord: Record<string, unknown> = {
     lead_id: leadId,
     lead_version: 1,
     lead_schema_version: "lead_v1",
@@ -437,10 +441,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({
+  const responseBody = {
     ok: true,
     resume_token: token,
     token,
     resumeUrl,
+    mint_source: mintSource,
+    contract_version: String((draftSnapshot as Record<string, unknown>).contract_version),
+    has_canonical_snapshot: canonicalSnapshot !== null,
+    canonicalSnapshot_invalid,
+    has_canonical_inputs: canonicalInputs !== null,
+  };
+
+  return NextResponse.json(responseBody, {
+    status: 200,
+    headers: { "Cache-Control": "no-store" },
   });
 }

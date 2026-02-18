@@ -75,7 +75,8 @@ function buildPayload(): JsonRecord {
     now_iso: iso,
     deal_terms: canonicalInputs.deal_terms,
     assumptions: canonicalInputs.assumptions,
-    results: computed.outputs.results,
+    results: computed.outputs,
+
   };
 
   const draftSnapshot = {

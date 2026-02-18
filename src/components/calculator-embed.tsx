@@ -143,11 +143,17 @@ export function CalculatorEmbed({
       }
 
       try {
+        const snap = gate.snapshot as Record<string, unknown>;
         const draftSnapshotForLead = Object.assign({}, gate.snapshot, {
           schema_version: "1",
           contract_version: "10.1.0",
           engine_version: "10.1.0",
           calculator_schema_version: "1",
+          email,
+          persona,
+          created_at: snap.created_at || new Date().toISOString(),
+          inputs: snap.inputs || (snap.deal_terms ? { _source: "deal_terms" } : {}),
+          basic_results: snap.basic_results || {},
         });
 
         const res = await fetch("/api/lead", {

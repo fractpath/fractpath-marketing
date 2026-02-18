@@ -1,15 +1,13 @@
+// src/app/api/lead/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import {
-  extractDealTermsDefaultsUsed,
-  DEAL_TERMS_DEFAULTS,
-} from "@/lib/canonicalInputMapper";
 
 const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
 const HUBSPOT_ENABLED =
   (process.env.HUBSPOT_ENABLED || "").toLowerCase() === "true";
 
+// Where mint happens (app owns draft_tokens table)
 const FRACTPATH_APP_URL = String(
-  process.env.FRACTPATH_APP_URL || "https://app.fractpath.com"
+  process.env.FRACTPATH_APP_URL || "https://app.fractpath.com",
 ).replace(/\/+$/, "");
 
 const rateLimit = new Map<string, { count: number; resetAt: number }>();
@@ -39,10 +37,9 @@ const REQUIRED_SNAPSHOT_KEYS = [
   "basic_results",
 ] as const;
 
-// Full-only keys (should not be present in marketing payload)
+// Keys that must never be sent from marketing
 const FULL_ONLY_KEYS = ["full_results", "settlements"] as const;
 
-// Validate draftSnapshot structure
 function isValidDraftSnapshot(
   snapshot: unknown,
 ): snapshot is Record<string, unknown> {
@@ -63,55 +60,7 @@ function containsFullOnlyKeys(snapshot: Record<string, unknown>): boolean {
   return FULL_ONLY_KEYS.some((key) => key in snapshot);
 }
 
-// Redact PII from inputs
-const PII_KEY_PATTERN = /(address|street|zip|postal|ssn|dob|phone|email)/i;
-function redactPiiFromInputs(
-  inputs: Record<string, unknown>,
-): Record<string, unknown> {
-  const redacted: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(inputs)) {
-    redacted[key] = PII_KEY_PATTERN.test(key) ? "[REDACTED]" : value;
-  }
-  return redacted;
-}
-
-// Build canonical snapshot safely (truncate if too large)
-const CANONICAL_MAX_BYTES = 20_480;
-function buildSafeCanonicalSnapshot(raw: Record<string, unknown>) {
-  const inputs = redactPiiFromInputs(raw.inputs as Record<string, unknown>);
-
-  const full = {
-    compute_version: raw.compute_version,
-    computed_at: raw.computed_at,
-    inputs,
-    assumptions: raw.assumptions,
-    outputs: raw.outputs,
-  };
-
-  let json = JSON.stringify(full);
-  let sizeBytes = new TextEncoder().encode(json).length;
-  if (sizeBytes <= CANONICAL_MAX_BYTES)
-    return { safe: full, size_bytes: sizeBytes, truncated: false };
-
-  const t1 = { ...full, outputs: "[TRUNCATED]" };
-  json = JSON.stringify(t1);
-  sizeBytes = new TextEncoder().encode(json).length;
-  if (sizeBytes <= CANONICAL_MAX_BYTES)
-    return { safe: t1, size_bytes: sizeBytes, truncated: true };
-
-  const t2 = { ...t1, assumptions: "[TRUNCATED]" };
-  json = JSON.stringify(t2);
-  sizeBytes = new TextEncoder().encode(json).length;
-  if (sizeBytes <= CANONICAL_MAX_BYTES)
-    return { safe: t2, size_bytes: sizeBytes, truncated: true };
-
-  const t3 = { ...t2, inputs: "[TRUNCATED]" };
-  json = JSON.stringify(t3);
-  sizeBytes = new TextEncoder().encode(json).length;
-  return { safe: t3, size_bytes: sizeBytes, truncated: true };
-}
-
-// Minimal DraftSnapshotV1 defaults for marketing testing
+// Minimal DraftSnapshot defaults (only used if caller omits draftSnapshot)
 function createMinimalDraftSnapshot(persona: string): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
@@ -130,7 +79,7 @@ function createMinimalDraftSnapshot(persona: string): Record<string, unknown> {
   };
 }
 
-// HubSpot integration (unchanged)
+// HubSpot integration (non-blocking)
 async function hubspotUpsert(
   email: string,
   snapshotJson: string,
@@ -146,6 +95,7 @@ async function hubspotUpsert(
       fp_last_scenario_at: new Date().toISOString(),
       fp_deal_summary: `Marketing scenario: persona=${persona}, mode=marketing`,
     };
+
     const searchRes = await fetch(
       "https://api.hubapi.com/crm/v3/objects/contacts/search",
       {
@@ -157,7 +107,9 @@ async function hubspotUpsert(
         body: JSON.stringify({
           filterGroups: [
             {
-              filters: [{ propertyName: "email", operator: "EQ", value: email }],
+              filters: [
+                { propertyName: "email", operator: "EQ", value: email },
+              ],
             },
           ],
         }),
@@ -165,6 +117,7 @@ async function hubspotUpsert(
     );
     if (!searchRes.ok) return;
     const data = await searchRes.json();
+
     if (data.total > 0) {
       const contactId = data.results[0].id;
       await fetch(
@@ -194,6 +147,8 @@ async function hubspotUpsert(
 }
 
 export async function POST(request: NextRequest) {
+  const debug = request.headers.get("x-fractpath-debug") === "1";
+
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
   if (isRateLimited(ip))
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
@@ -207,10 +162,6 @@ export async function POST(request: NextRequest) {
 
   const email = typeof body.email === "string" ? body.email.trim() : "";
   const persona = typeof body.persona === "string" ? body.persona.trim() : "";
-  const draftSnapshot =
-    body.draftSnapshot ?? createMinimalDraftSnapshot(persona);
-  const rawCanonicalSnapshot = body.canonicalSnapshot;
-  const rawCanonicalInputs = body.canonicalInputs;
 
   if (!email || !email.includes("@"))
     return NextResponse.json(
@@ -227,75 +178,113 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
 
+  const draftSnapshot =
+    (body.draftSnapshot as unknown) ?? createMinimalDraftSnapshot(persona);
+
   if (!isValidDraftSnapshot(draftSnapshot))
     return NextResponse.json(
       { error: "Invalid draftSnapshot: missing required fields" },
       { status: 422 },
     );
 
-  if (containsFullOnlyKeys(draftSnapshot))
+  if (containsFullOnlyKeys(draftSnapshot as Record<string, unknown>))
     return NextResponse.json(
       { error: "Rejected: payload contains full-only fields" },
       { status: 422 },
     );
 
+  // Non-blocking CRM write
   hubspotUpsert(email, JSON.stringify(draftSnapshot), persona).catch(() => {});
 
-  // Mint draft token
-  let token: string | null = null;
-  let resumeUrl: string | null = null;
-  let mintSource = "local_fallback";
+  // Build snapshot_json to send to app mint endpoint
+  const snapshotJson: Record<string, unknown> = {
+    draftSnapshot,
+    // Pass through canonical fields if present
+    canonicalSnapshot: (body.canonicalSnapshot as unknown) ?? null,
+    canonicalInputs: (body.canonicalInputs as unknown) ?? null,
+    // Optional: include email/persona metadata (non-sensitive)
+    meta: { source: "marketing", persona },
+  };
+
+  const mintUrl = `${FRACTPATH_APP_URL}/api/draft-tokens/mint`;
 
   try {
-    const mintRes = await fetch(`${FRACTPATH_APP_URL}/api/draft-tokens/mint`, {
+    const mintRes = await fetch(mintUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json",
+      },
       body: JSON.stringify({
+        snapshot_json: snapshotJson,
         source: "marketing",
-        snapshot_json: draftSnapshot,
-        canonicalSnapshot: rawCanonicalSnapshot,
-        canonicalInputs: rawCanonicalInputs,
       }),
-      signal: AbortSignal.timeout(5000),
     });
 
-    if (mintRes.ok) {
-      const mintData = (await mintRes.json()) as Record<string, unknown>;
-      token = typeof mintData.token === "string" ? mintData.token : null;
-
-      // ✅ FIX: never return a relative /resume URL from marketing
-      resumeUrl =
-        typeof mintData.resumeUrl === "string" &&
-        mintData.resumeUrl.startsWith("http")
-          ? mintData.resumeUrl
-          : `${FRACTPATH_APP_URL}/resume?token=${token}`;
-
-      if (token) mintSource = "app_mint";
+    const raw = await mintRes.text();
+    let parsed: any = null;
+    try {
+      parsed = raw ? JSON.parse(raw) : null;
+    } catch {
+      parsed = null;
     }
+
+    if (!mintRes.ok) {
+      if (debug) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "mint_failed",
+            mint_status: mintRes.status,
+            mint_body: raw.slice(0, 4000),
+          },
+          { status: 502 },
+        );
+      }
+      return NextResponse.json(
+        { ok: false, error: "mint_failed" },
+        { status: 502 },
+      );
+    }
+
+    const token = parsed?.token ?? parsed?.resume_token ?? null;
+    if (!token || typeof token !== "string") {
+      if (debug) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "mint_missing_token",
+            mint_body: raw.slice(0, 4000),
+          },
+          { status: 502 },
+        );
+      }
+      return NextResponse.json(
+        { ok: false, error: "mint_missing_token" },
+        { status: 502 },
+      );
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        token,
+        // IMPORTANT: resume happens in app, not marketing
+        resumeUrl: `${FRACTPATH_APP_URL}/resume?token=${token}`,
+      },
+      { status: 201, headers: { "Cache-Control": "no-store" } },
+    );
   } catch (err) {
-    console.warn(
-      "[lead] draft-tokens/mint call failed (using local fallback):",
-      err,
+    const msg = err instanceof Error ? err.message : String(err);
+    if (debug) {
+      return NextResponse.json(
+        { ok: false, error: "mint_exception", message: msg },
+        { status: 502 },
+      );
+    }
+    return NextResponse.json(
+      { ok: false, error: "mint_exception" },
+      { status: 502 },
     );
   }
-
-  if (!token)
-    return NextResponse.json(
-      { ok: false, error: "mint_failed" },
-      { status: 502, headers: { "Cache-Control": "no-store" } },
-    );
-
-  return NextResponse.json(
-    {
-      ok: true,
-      token,
-      resume_token: token,
-      resumeUrl,
-      mint_source: mintSource,
-      contract_version: String((draftSnapshot as any).contract_version),
-      has_canonical_snapshot: rawCanonicalSnapshot !== null,
-      has_canonical_inputs: rawCanonicalInputs !== null,
-    },
-    { status: 200, headers: { "Cache-Control": "no-store" } },
-  );
 }

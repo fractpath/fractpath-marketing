@@ -1,12 +1,13 @@
 import { describe, it, expect } from "vitest";
 import { computeDeal } from "../src/computeDeal.js";
 import { roundMoney, roundRate, clamp } from "../src/rounding.js";
-import {
-  irrMonthlySingleOutflowInflow,
-  annualizeMonthly,
-} from "../src/irr.js";
+import { irrMonthlySingleOutflowInflow, annualizeMonthly } from "../src/irr.js";
 import { COMPUTE_SEMVER, COMPUTE_VERSION } from "../src/version.js";
-import type { DealTerms, ScenarioAssumptions, DealSnapshot } from "../src/types.js";
+import type {
+  DealTerms,
+  ScenarioAssumptions,
+  DealSnapshot,
+} from "../src/types.js";
 
 const NOW = "2026-02-13T00:00:00.000Z";
 
@@ -99,26 +100,29 @@ describe("computeDeal", () => {
     expect(COMPUTE_VERSION.startsWith(COMPUTE_SEMVER)).toBe(true);
     expect(result.computed_at).toBe(NOW);
 
-    const tf = result.outputs.timing_factor_effective;
+    const tf = result.outputs.results.timing_factor_effective;
     expect(tf).toBeCloseTo(12 / 60, 8);
     expect(tf).toBeCloseTo(0.2, 8);
 
-    expect(result.outputs.investor_multiple).toBeGreaterThan(1);
-    expect(result.outputs.investor_multiple).toBeLessThan(1.2);
+    expect(result.outputs.results.investor_multiple).toBeGreaterThan(1);
+    expect(result.outputs.results.investor_multiple).toBeLessThan(1.2);
 
     const expectedMultiple = 1 + (600_000 / 500_000 - 1) * 0.2;
-    expect(result.outputs.investor_multiple).toBeCloseTo(expectedMultiple, 6);
+    expect(result.outputs.results.investor_multiple).toBeCloseTo(
+      expectedMultiple,
+      6,
+    );
 
-    expect(result.outputs.investor_settlement_usd).toBeCloseTo(
+    expect(result.outputs.results.isa_settlement).toBeCloseTo(
       100_000 * expectedMultiple,
       1,
     );
 
-    expect(result.outputs.investor_profit_usd).toBeGreaterThan(0);
-    expect(result.outputs.floor_applied).toBe(false);
-    expect(result.outputs.ceiling_applied).toBe(false);
-    expect(result.outputs.monthly_irr).toBeGreaterThan(0);
-    expect(result.outputs.annual_irr).toBeGreaterThan(0);
+    expect(result.outputs.results.investor_profit_usd).toBeGreaterThan(0);
+    expect(result.outputs.results.floor_applied).toBe(false);
+    expect(result.outputs.results.ceiling_applied).toBe(false);
+    expect(result.outputs.results.monthly_irr).toBeGreaterThan(0);
+    expect(result.outputs.results.investor_irr_annual).toBeGreaterThan(0);
   });
 
   it("flat market (ratio = 1)", () => {
@@ -130,11 +134,11 @@ describe("computeDeal", () => {
     });
     const result = computeDeal(terms, assumptions, NOW);
 
-    expect(result.outputs.investor_multiple).toBeCloseTo(1, 6);
-    expect(result.outputs.investor_settlement_usd).toBe(100_000);
-    expect(result.outputs.investor_profit_usd).toBe(0);
-    expect(result.outputs.floor_applied).toBe(false);
-    expect(result.outputs.ceiling_applied).toBe(false);
+    expect(result.outputs.results.investor_multiple).toBeCloseTo(1, 6);
+    expect(result.outputs.results.isa_settlement).toBe(100_000);
+    expect(result.outputs.results.investor_profit_usd).toBe(0);
+    expect(result.outputs.results.floor_applied).toBe(false);
+    expect(result.outputs.results.ceiling_applied).toBe(false);
   });
 
   it("negative market with HARD_FLOOR — floor binds", () => {
@@ -149,11 +153,11 @@ describe("computeDeal", () => {
     });
     const result = computeDeal(terms, assumptions, NOW);
 
-    expect(result.outputs.investor_multiple).toBeCloseTo(0.8, 6);
-    expect(result.outputs.investor_settlement_usd).toBe(80_000);
-    expect(result.outputs.investor_profit_usd).toBe(-20_000);
-    expect(result.outputs.floor_applied).toBe(true);
-    expect(result.outputs.ceiling_applied).toBe(false);
+    expect(result.outputs.results.investor_multiple).toBeCloseTo(0.8, 6);
+    expect(result.outputs.results.isa_settlement).toBe(80_000);
+    expect(result.outputs.results.investor_profit_usd).toBe(-20_000);
+    expect(result.outputs.results.floor_applied).toBe(true);
+    expect(result.outputs.results.ceiling_applied).toBe(false);
   });
 
   it("negative market with NO_FLOOR — no clamp", () => {
@@ -169,12 +173,15 @@ describe("computeDeal", () => {
     const result = computeDeal(terms, assumptions, NOW);
 
     const expectedMultiple = 300_000 / 500_000;
-    expect(result.outputs.investor_multiple).toBeCloseTo(expectedMultiple, 6);
-    expect(result.outputs.investor_settlement_usd).toBe(
+    expect(result.outputs.results.investor_multiple).toBeCloseTo(
+      expectedMultiple,
+      6,
+    );
+    expect(result.outputs.results.isa_settlement).toBe(
       roundMoney(100_000 * expectedMultiple),
     );
-    expect(result.outputs.floor_applied).toBe(false);
-    expect(result.outputs.ceiling_applied).toBe(false);
+    expect(result.outputs.results.floor_applied).toBe(false);
+    expect(result.outputs.results.ceiling_applied).toBe(false);
   });
 
   it("ceiling binding — very high appreciation", () => {
@@ -186,10 +193,10 @@ describe("computeDeal", () => {
     });
     const result = computeDeal(terms, assumptions, NOW);
 
-    expect(result.outputs.investor_multiple).toBeCloseTo(2.0, 6);
-    expect(result.outputs.investor_settlement_usd).toBe(200_000);
-    expect(result.outputs.ceiling_applied).toBe(true);
-    expect(result.outputs.floor_applied).toBe(false);
+    expect(result.outputs.results.investor_multiple).toBeCloseTo(2.0, 6);
+    expect(result.outputs.results.isa_settlement).toBe(200_000);
+    expect(result.outputs.results.ceiling_applied).toBe(true);
+    expect(result.outputs.results.floor_applied).toBe(false);
   });
 
   it("late exit — months >= maturity, tf_eff = 1", () => {
@@ -201,11 +208,11 @@ describe("computeDeal", () => {
     });
     const result = computeDeal(terms, assumptions, NOW);
 
-    expect(result.outputs.timing_factor_effective).toBe(1);
+    expect(result.outputs.results.timing_factor_effective).toBe(1);
 
     const rawRatio = 700_000 / 500_000;
-    expect(result.outputs.investor_multiple).toBeCloseTo(rawRatio, 6);
-    expect(result.outputs.ceiling_applied).toBe(false);
+    expect(result.outputs.results.investor_multiple).toBeCloseTo(rawRatio, 6);
+    expect(result.outputs.results.ceiling_applied).toBe(false);
   });
 
   it("determinism — same inputs produce same outputs", () => {
@@ -228,10 +235,10 @@ describe("computeDeal", () => {
     });
     const result = computeDeal(terms, assumptions, NOW);
 
-    expect(result.outputs.investor_settlement_usd).toBe(
+    expect(result.outputs.results.isa_settlement).toBe(
       roundMoney(100_000 * (1 - 0.06)),
     );
-    expect(result.outputs.investor_profit_usd).toBeLessThan(0);
+    expect(result.outputs.results.investor_profit_usd).toBeLessThan(0);
   });
 
   it("embeds inputs and assumptions in result", () => {
@@ -239,39 +246,29 @@ describe("computeDeal", () => {
     const assumptions = makeAssumptions();
     const result = computeDeal(terms, assumptions, NOW);
 
-    expect(result.inputs).toEqual(terms);
-    expect(result.assumptions).toEqual(assumptions);
+    expect(result.inputs.deal_terms).toEqual(terms);
+    expect(result.inputs.scenario).toEqual(assumptions);
   });
 
   it("throws for invalid inputs", () => {
     expect(() =>
-      computeDeal(
-        makeTerms(),
-        makeAssumptions({ start_fmv_usd: 0 }),
-        NOW,
-      ),
+      computeDeal(makeTerms(), makeAssumptions({ start_fmv_usd: 0 }), NOW),
     ).toThrow("start_fmv_usd must be > 0");
 
     expect(() =>
-      computeDeal(
-        makeTerms(),
-        makeAssumptions({ months_held: 0 }),
-        NOW,
-      ),
+      computeDeal(makeTerms(), makeAssumptions({ months_held: 0 }), NOW),
     ).toThrow("months_held must be > 0");
 
     expect(() =>
-      computeDeal(
-        makeTerms({ iba_usd: 0 }),
-        makeAssumptions(),
-        NOW,
-      ),
+      computeDeal(makeTerms({ iba_usd: 0 }), makeAssumptions(), NOW),
     ).toThrow("iba_usd must be > 0");
   });
 
   it("throws when nowIso is not provided (deterministic core)", () => {
     // @ts-expect-error - nowIso is required by design
-    expect(() => computeDeal(makeTerms(), makeAssumptions())).toThrow(/nowIso is required/i);
+    expect(() => computeDeal(makeTerms(), makeAssumptions())).toThrow(
+      /nowIso is required/i,
+    );
   });
 
   it("returns a DealSnapshot with all required keys", () => {
@@ -280,13 +277,13 @@ describe("computeDeal", () => {
     expect(snap).toHaveProperty("compute_version");
     expect(snap).toHaveProperty("computed_at");
     expect(snap).toHaveProperty("inputs");
-    expect(snap).toHaveProperty("assumptions");
+
     expect(snap).toHaveProperty("outputs");
 
     expect(typeof snap.compute_version).toBe("string");
     expect(typeof snap.computed_at).toBe("string");
     expect(typeof snap.inputs).toBe("object");
-    expect(typeof snap.assumptions).toBe("object");
+
     expect(typeof snap.outputs).toBe("object");
   });
 

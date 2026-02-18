@@ -79,17 +79,24 @@ export function computeDeal(
   return {
     compute_version: COMPUTE_VERSION,
     computed_at: nowIso,
-    inputs: terms,
-    assumptions,
+    inputs: {
+      deal_terms: terms,
+      scenario: assumptions,
+    },
     outputs: {
-      investor_settlement_usd,
-      investor_multiple,
-      investor_profit_usd,
-      monthly_irr,
-      annual_irr,
-      floor_applied,
-      ceiling_applied,
-      timing_factor_effective: tf_eff,
+      results: {
+        // Canonical KPI names expected by app
+        isa_settlement: investor_settlement_usd,
+        investor_multiple,
+        investor_profit_usd,
+        investor_irr_annual: annual_irr,
+
+        // Keep detailed metrics (can expand UI later)
+        monthly_irr,
+        floor_applied,
+        ceiling_applied,
+        timing_factor_effective: tf_eff,
+      },
     },
   };
 }

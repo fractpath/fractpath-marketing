@@ -12,6 +12,7 @@ import {
 } from "fractpath-calculator-widget";
 import {
   DEAL_TERMS_DEFAULTS,
+  SCENARIO_DEFAULTS,
   mapWidgetInputsToCanonical,
 } from "@/lib/canonicalInputMapper";
 
@@ -67,36 +68,116 @@ type GateState =
     };
 
 function isFullDealSnapshot(snap: WidgetSnapshot): snap is FullDealSnapshotV1 {
-  return "deal_terms" in snap && !("inputs" in snap);
+  return "deal_terms" in snap;
 }
 
-function extractInputsFromSnapshot(snap: WidgetSnapshot): Record<string, unknown> {
+function buildCanonicalDealTerms(snap: WidgetSnapshot): Record<string, unknown> {
+  if (isFullDealSnapshot(snap) && snap.deal_terms) {
+    return {
+      property_value: snap.deal_terms.property_value,
+      upfront_payment: snap.deal_terms.upfront_payment,
+      monthly_payment: snap.deal_terms.monthly_payment ?? DEAL_TERMS_DEFAULTS.monthly_payment,
+      number_of_payments: snap.deal_terms.number_of_payments ?? DEAL_TERMS_DEFAULTS.number_of_payments,
+      payback_window_start_year: DEAL_TERMS_DEFAULTS.payback_window_start_year,
+      payback_window_end_year: DEAL_TERMS_DEFAULTS.payback_window_end_year,
+      timing_factor_early: DEAL_TERMS_DEFAULTS.timing_factor_early,
+      timing_factor_late: DEAL_TERMS_DEFAULTS.timing_factor_late,
+      floor_multiple: snap.deal_terms.floor_multiple ?? DEAL_TERMS_DEFAULTS.floor_multiple,
+      ceiling_multiple: snap.deal_terms.ceiling_multiple ?? DEAL_TERMS_DEFAULTS.ceiling_multiple,
+      downside_mode: snap.deal_terms.downside_mode ?? DEAL_TERMS_DEFAULTS.downside_mode,
+      contract_maturity_years: snap.deal_terms.contract_maturity_years ?? DEAL_TERMS_DEFAULTS.contract_maturity_years,
+      liquidity_trigger_year: snap.deal_terms.liquidity_trigger_year ?? DEAL_TERMS_DEFAULTS.liquidity_trigger_year,
+      minimum_hold_years: snap.deal_terms.minimum_hold_years ?? DEAL_TERMS_DEFAULTS.minimum_hold_years,
+      platform_fee: snap.deal_terms.platform_fee ?? DEAL_TERMS_DEFAULTS.platform_fee,
+      servicing_fee_monthly: snap.deal_terms.servicing_fee_monthly ?? DEAL_TERMS_DEFAULTS.servicing_fee_monthly,
+      exit_fee_pct: snap.deal_terms.exit_fee_pct ?? DEAL_TERMS_DEFAULTS.exit_fee_pct,
+      duration_yield_floor_enabled: DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
+    };
+  }
+  if ("inputs" in snap && snap.inputs) {
+    const inp = snap.inputs;
+    return {
+      property_value: inp.homeValue,
+      upfront_payment: inp.initialBuyAmount,
+      monthly_payment: DEAL_TERMS_DEFAULTS.monthly_payment,
+      number_of_payments: DEAL_TERMS_DEFAULTS.number_of_payments,
+      payback_window_start_year: DEAL_TERMS_DEFAULTS.payback_window_start_year,
+      payback_window_end_year: DEAL_TERMS_DEFAULTS.payback_window_end_year,
+      timing_factor_early: DEAL_TERMS_DEFAULTS.timing_factor_early,
+      timing_factor_late: DEAL_TERMS_DEFAULTS.timing_factor_late,
+      floor_multiple: DEAL_TERMS_DEFAULTS.floor_multiple,
+      ceiling_multiple: DEAL_TERMS_DEFAULTS.ceiling_multiple,
+      downside_mode: DEAL_TERMS_DEFAULTS.downside_mode,
+      contract_maturity_years: inp.termYears ?? DEAL_TERMS_DEFAULTS.contract_maturity_years,
+      liquidity_trigger_year: DEAL_TERMS_DEFAULTS.liquidity_trigger_year,
+      minimum_hold_years: DEAL_TERMS_DEFAULTS.minimum_hold_years,
+      platform_fee: DEAL_TERMS_DEFAULTS.platform_fee,
+      servicing_fee_monthly: DEAL_TERMS_DEFAULTS.servicing_fee_monthly,
+      exit_fee_pct: DEAL_TERMS_DEFAULTS.exit_fee_pct,
+      duration_yield_floor_enabled: DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
+    };
+  }
+  return {
+    property_value: 500000,
+    upfront_payment: 100000,
+    monthly_payment: DEAL_TERMS_DEFAULTS.monthly_payment,
+    number_of_payments: DEAL_TERMS_DEFAULTS.number_of_payments,
+    payback_window_start_year: DEAL_TERMS_DEFAULTS.payback_window_start_year,
+    payback_window_end_year: DEAL_TERMS_DEFAULTS.payback_window_end_year,
+    timing_factor_early: DEAL_TERMS_DEFAULTS.timing_factor_early,
+    timing_factor_late: DEAL_TERMS_DEFAULTS.timing_factor_late,
+    floor_multiple: DEAL_TERMS_DEFAULTS.floor_multiple,
+    ceiling_multiple: DEAL_TERMS_DEFAULTS.ceiling_multiple,
+    downside_mode: DEAL_TERMS_DEFAULTS.downside_mode,
+    contract_maturity_years: DEAL_TERMS_DEFAULTS.contract_maturity_years,
+    liquidity_trigger_year: DEAL_TERMS_DEFAULTS.liquidity_trigger_year,
+    minimum_hold_years: DEAL_TERMS_DEFAULTS.minimum_hold_years,
+    platform_fee: DEAL_TERMS_DEFAULTS.platform_fee,
+    servicing_fee_monthly: DEAL_TERMS_DEFAULTS.servicing_fee_monthly,
+    exit_fee_pct: DEAL_TERMS_DEFAULTS.exit_fee_pct,
+    duration_yield_floor_enabled: DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
+  };
+}
+
+function buildCanonicalScenario(snap: WidgetSnapshot): Record<string, unknown> {
+  if (isFullDealSnapshot(snap) && snap.assumptions) {
+    return {
+      annual_appreciation: snap.assumptions.annual_appreciation ?? 0.03,
+      closing_cost_pct: SCENARIO_DEFAULTS.closing_cost_pct,
+      exit_year: snap.deal_terms?.contract_maturity_years ?? SCENARIO_DEFAULTS.exit_year,
+    };
+  }
+  if ("inputs" in snap && snap.inputs) {
+    return {
+      annual_appreciation: snap.inputs.annualGrowthRate ?? 0.03,
+      closing_cost_pct: SCENARIO_DEFAULTS.closing_cost_pct,
+      exit_year: snap.inputs.termYears ?? SCENARIO_DEFAULTS.exit_year,
+    };
+  }
+  return {
+    annual_appreciation: 0.03,
+    closing_cost_pct: SCENARIO_DEFAULTS.closing_cost_pct,
+    exit_year: SCENARIO_DEFAULTS.exit_year,
+  };
+}
+
+function buildCanonicalInputs(snap: WidgetSnapshot): Record<string, unknown> {
   if ("inputs" in snap && snap.inputs) {
     return snap.inputs as Record<string, unknown>;
   }
-  if (isFullDealSnapshot(snap) && snap.deal_terms) {
+  const dt = isFullDealSnapshot(snap) ? snap.deal_terms : null;
+  if (dt) {
     return {
-      homeValue: snap.deal_terms.property_value,
-      initialBuyAmount: snap.deal_terms.upfront_payment,
-      termYears: snap.deal_terms.contract_maturity_years,
-      annualGrowthRate: snap.assumptions?.annual_appreciation ?? 0.03,
-      monthlyPayment: snap.deal_terms.monthly_payment,
-      numberOfPayments: snap.deal_terms.number_of_payments,
-      floorMultiple: snap.deal_terms.floor_multiple,
-      ceilingMultiple: snap.deal_terms.ceiling_multiple,
-      downsideMode: snap.deal_terms.downside_mode,
-      platformFee: snap.deal_terms.platform_fee,
-      exitFeePct: snap.deal_terms.exit_fee_pct,
-      servicingFeeMonthly: snap.deal_terms.servicing_fee_monthly,
-      minimumHoldYears: snap.deal_terms.minimum_hold_years,
-      liquidityTriggerYear: snap.deal_terms.liquidity_trigger_year,
-      contractMaturityYears: snap.deal_terms.contract_maturity_years,
+      homeValue: dt.property_value,
+      initialBuyAmount: dt.upfront_payment,
+      termYears: dt.contract_maturity_years,
+      annualGrowthRate: (snap as FullDealSnapshotV1).assumptions?.annual_appreciation ?? 0.03,
     };
   }
-  return {};
+  return { homeValue: 500000, initialBuyAmount: 100000, termYears: 5, annualGrowthRate: 0.03 };
 }
 
-function extractBasicResultsFromSnapshot(snap: WidgetSnapshot): Record<string, unknown> {
+function buildBasicResults(snap: WidgetSnapshot): Record<string, unknown> {
   if ("basic_results" in snap && snap.basic_results) {
     return snap.basic_results as Record<string, unknown>;
   }
@@ -117,13 +198,6 @@ export function CalculatorEmbed({
   const [widgetError, setWidgetError] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
 
-  const [floorMultiple, setFloorMultiple] = useState(
-    DEAL_TERMS_DEFAULTS.floor_multiple.toString(),
-  );
-  const [ceilingMultiple, setCeilingMultiple] = useState(
-    DEAL_TERMS_DEFAULTS.ceiling_multiple.toString(),
-  );
-
   useEffect(() => {
     if (gate.step === "save_gate" || gate.step === "share_gate") {
       requestAnimationFrame(() => emailRef.current?.focus());
@@ -139,11 +213,10 @@ export function CalculatorEmbed({
   );
 
   const handleDraftSnapshot = useCallback((snapshot: WidgetSnapshot) => {
-    console.log("[widget] draft snapshot emitted", {
+    console.log("[widget] snapshot emitted", {
       type: isFullDealSnapshot(snapshot) ? "FullDealSnapshotV1" : "DraftSnapshot",
       hasInputs: "inputs" in snapshot,
       hasDealTerms: "deal_terms" in snapshot,
-      hasBasicResults: "basic_results" in snapshot,
     });
     setGate({ step: "save_gate", snapshot });
     setEmailInput("");
@@ -183,40 +256,41 @@ export function CalculatorEmbed({
       const email = emailInput.trim();
       if (!email || !email.includes("@")) return;
 
-      const floor = Number.parseFloat(floorMultiple);
-      const ceiling = Number.parseFloat(ceilingMultiple);
-
-      if (!(floor > 0) || !(ceiling > 0) || floor > ceiling) {
-        console.warn("[canonical-mapper] invalid deal terms", { floor, ceiling });
-        return;
-      }
-
       setGate({ step: "save_submitting", snapshot: gate.snapshot, email });
       trackLeadEmailSubmitted(persona);
 
-      const safeInputs = extractInputsFromSnapshot(gate.snapshot);
-      const safeBasicResults = extractBasicResultsFromSnapshot(gate.snapshot);
+      const dealTerms = buildCanonicalDealTerms(gate.snapshot);
+      const scenario = buildCanonicalScenario(gate.snapshot);
+      const inputs = buildCanonicalInputs(gate.snapshot);
+      const basicResults = buildBasicResults(gate.snapshot);
+      const now = new Date().toISOString();
 
       const draftSnapshotForLead: Record<string, unknown> = {
-        ...gate.snapshot,
-        schema_version: "1",
         contract_version: "10.1.0",
+        schema_version: "1",
         engine_version: "10.1.0",
-        calculator_schema_version: "1",
+        compute_version: "10.1.0",
         email,
         persona,
-        created_at: gate.snapshot.created_at || new Date().toISOString(),
-        inputs: safeInputs,
-        basic_results: safeBasicResults,
+        mode: "marketing",
+        created_at: gate.snapshot.created_at || now,
+        computed_at: now,
+        deal_terms: dealTerms,
+        assumptions: scenario,
+        inputs,
+        basic_results: basicResults,
       };
 
+      if (isFullDealSnapshot(gate.snapshot) && gate.snapshot.outputs) {
+        draftSnapshotForLead.outputs = gate.snapshot.outputs;
+      }
+
       const mapped = mapWidgetInputsToCanonical(
-        safeInputs as { homeValue: number; initialBuyAmount: number; termYears: number; annualGrowthRate: number },
-        { floor_multiple: floor, ceiling_multiple: ceiling },
+        inputs as { homeValue: number; initialBuyAmount: number; termYears: number; annualGrowthRate: number },
       );
 
       if (!mapped.ok) {
-        console.warn("[canonical-mapper] mapping failed:", mapped.field, mapped.message);
+        console.warn("[canonical-mapper] mapping note:", mapped.field, mapped.message);
       }
 
       try {
@@ -269,7 +343,7 @@ export function CalculatorEmbed({
         });
       }
     },
-    [gate, emailInput, persona, floorMultiple, ceilingMultiple],
+    [gate, emailInput, persona],
   );
 
   const handleShareSubmit = useCallback(
@@ -390,34 +464,6 @@ export function CalculatorEmbed({
                   required
                   autoFocus
                 />
-              </div>
-              <div className="space-y-3 rounded-xl border border-border/60 p-3">
-                <div className="text-sm font-medium">Deal terms</div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="gate-floor">Floor multiple</Label>
-                    <Input
-                      id="gate-floor"
-                      inputMode="decimal"
-                      placeholder="0.8"
-                      value={floorMultiple}
-                      onChange={(e) => setFloorMultiple(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="gate-ceiling">Ceiling multiple</Label>
-                    <Input
-                      id="gate-ceiling"
-                      inputMode="decimal"
-                      placeholder="2.0"
-                      value={ceilingMultiple}
-                      onChange={(e) => setCeilingMultiple(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Defaults shown. These terms are editable in the app.
-                </p>
               </div>
               <Button type="submit" className="w-full">
                 Save &amp; Continue

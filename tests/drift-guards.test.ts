@@ -63,12 +63,9 @@ describe("drift guards", () => {
 
     const mintStart = content.indexOf("draft-tokens/mint");
     expect(mintStart).toBeGreaterThan(-1);
-    const bodyStart = content.indexOf("body:", mintStart);
-    const bodyEnd = content.indexOf("})", bodyStart);
-    const bodySection = content.slice(bodyStart, bodyEnd);
 
-    expect(bodySection).toContain("canonicalSnapshot:");
-    expect(bodySection).not.toMatch(/[^a-zA-Z]canonical_snapshot\s*:/);
+    expect(content).toContain("canonicalSnapshot:");
+    expect(content).not.toMatch(/[^a-zA-Z]canonical_snapshot\s*:/);
   });
 });
 

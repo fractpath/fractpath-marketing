@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Container,
   Section,
@@ -6,10 +8,19 @@ import {
   TopNav,
   Footer,
 } from "@/components/ui-kit";
-import { PersonaPageContent } from "@/components/persona-page-content";
-import { Badge } from "@/components/ui/badge";
 import { HeroCta } from "@/components/hero-cta";
-import { BarChart3, Handshake, FileCheck, Home, Key, Users, Shield, Scale, Eye } from "lucide-react";
+import { PersonaPageContent } from "@/components/persona-page-content";
+import {
+  Home,
+  Key,
+  Users,
+  BarChart3,
+  Handshake,
+  FileCheck,
+  Shield,
+  Scale,
+  Eye,
+} from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -148,7 +159,8 @@ export default function HomePage() {
               <p className="text-sm leading-relaxed text-muted-foreground">
                 No. FractPath models fractional equity scenarios. It is not a
                 lender and does not provide loans, mortgages, or financial
-                advice. All outputs are estimates for scenario modeling purposes.
+                advice. All outputs are estimates for scenario modeling
+                purposes.
               </p>
             </div>
             <div>
@@ -166,7 +178,8 @@ export default function HomePage() {
               <h3 className="mb-2 font-semibold">Is my information safe?</h3>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 We take data privacy seriously. Scenario inputs are used only to
-                generate your estimates. See our Privacy Policy for full details.
+                generate your estimates. See our Privacy Policy for full
+                details.
               </p>
             </div>
             <div>

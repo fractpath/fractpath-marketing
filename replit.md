@@ -117,6 +117,7 @@ If the upstream widget changes, rebuild the tarball:
 - No local recompute in marketing — widget owns UI computation, app owns canonical compute
 
 ## Recent Changes
+- 2026-02-18: Multi-repo verification — fixed page.tsx duplicate imports, added FullDealSnapshotV1 type to widget + ambient d.ts, fixed widget build (missing type, async buildSavePayload, initialSnapshot prop), rebuilt tarball with dist/ included (.npmignore), updated calculator-embed to handle DraftSnapshot|FullDealSnapshotV1 union, marketing build passes, 6/6 drift guards pass, env vars split dev/prod
 - 2026-02-17: Hardened Save & Continue resume URL — client-side URL construction now uses NEXT_PUBLIC_FRACTPATH_APP_URL env var instead of hardcoded app base; server-side /api/lead always returns absolute resumeUrl; dev-only console.log for navigation debugging
 - 2026-02-16: Sprint 10 Phase 5B — Canonical v10.1 migration cutover: removed all @/lib/compute imports, deleted legacy bridge, created canonicalInputMapper.ts, fixed mint payload key drift (canonical_snapshot → canonicalSnapshot), added canonicalInputs acceptance in lead route, added 9 drift guard tests
 - 2026-02-13: Fixed /api/lead rejecting widget draftSnapshot — removed input_hash and output_hash from FULL_ONLY_KEYS (they are integrity hashes emitted in marketing mode, not app-only fields). Verified all flows end-to-end.

@@ -213,7 +213,7 @@ export function WiredCalculatorWidget(props: FractPathCalculatorWidgetProps) {
   const handleSave = useCallback(async () => {
     onEvent?.({ type: "save_clicked", persona });
     if (onSave) {
-      const payload = buildSavePayload(
+      const payload = await buildSavePayload(
         persona,
         outputs.normalizedInputs,
         outputs,

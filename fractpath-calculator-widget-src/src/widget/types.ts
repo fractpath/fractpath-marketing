@@ -73,10 +73,35 @@ export type WidgetEvent =
   | { type: "save_continue_clicked"; persona: CalculatorPersona }
   | { type: "save_clicked"; persona: CalculatorPersona };
 
+export type FullDealSnapshotV1 = {
+  contract_version: string;
+  schema_version: string;
+  deal_terms: {
+    property_value: number;
+    upfront_payment: number;
+    monthly_payment: number;
+    number_of_payments: number;
+    floor_multiple: number;
+    ceiling_multiple: number;
+    downside_mode: string;
+    contract_maturity_years: number;
+    liquidity_trigger_year: number;
+    minimum_hold_years: number;
+    platform_fee: number;
+    servicing_fee_monthly: number;
+    exit_fee_pct: number;
+  };
+  assumptions: { annual_appreciation: number };
+  outputs: ScenarioOutputs;
+  now_iso: string;
+  created_at: string;
+};
+
 export type FractPathCalculatorWidgetProps = {
   persona: CalculatorPersona;
   mode?: CalculatorMode;
-  onDraftSnapshot?: (snapshot: DraftSnapshot) => void;
+  initialSnapshot?: FullDealSnapshotV1 | null;
+  onDraftSnapshot?: (snapshot: DraftSnapshot | FullDealSnapshotV1) => void;
   onShareSummary?: (summary: ShareSummary) => void;
   onSave?: (payload: SavePayload) => void;
   onEvent?: (event: WidgetEvent) => void;

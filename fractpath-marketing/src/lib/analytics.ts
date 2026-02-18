@@ -38,3 +38,14 @@ export function trackCustomEvent(name: string, props?: Record<string, string>) {
     // analytics must never break the app
   }
 }
+
+// --- Added missing exports for build ---
+export function trackPersonaSelected(persona: string) {
+  // Placeholder: log to console; can later integrate real analytics
+  console.log("[Analytics] Persona selected:", persona);
+}
+
+export function trackLeadEmailSubmitted(email: string) {
+  // Placeholder: log to console; can later integrate real analytics
+  console.log("[Analytics] Lead email submitted:", email);
+}

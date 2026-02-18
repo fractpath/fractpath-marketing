@@ -16,6 +16,7 @@ export type {
   ShareSummary,
   ShareSummaryBasicResults,
   SavePayload,
+  FullDealSnapshotV1,
   WidgetEvent,
   FractPathCalculatorWidgetProps,
 } from "../widget/types.js";

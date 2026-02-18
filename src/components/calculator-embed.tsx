@@ -6,6 +6,7 @@ import {
   FractPathCalculatorWidget,
   type CalculatorPersona,
   type DraftSnapshot,
+  type FullDealSnapshotV1,
   type ShareSummary,
   type WidgetEvent,
 } from "fractpath-calculator-widget";
@@ -35,15 +36,17 @@ const PERSONA_OPTIONS: { value: CalculatorPersona; label: string }[] = [
   { value: "realtor", label: "Realtor" },
 ];
 
+type WidgetSnapshot = DraftSnapshot | FullDealSnapshotV1;
+
 type GateState =
   | { step: "idle" }
-  | { step: "save_gate"; snapshot: DraftSnapshot }
-  | { step: "save_submitting"; snapshot: DraftSnapshot; email: string }
+  | { step: "save_gate"; snapshot: WidgetSnapshot }
+  | { step: "save_submitting"; snapshot: WidgetSnapshot; email: string }
   | { step: "save_done" }
   | {
       step: "save_error";
       message: string;
-      snapshot: DraftSnapshot;
+      snapshot: WidgetSnapshot;
       email: string;
     }
   | { step: "share_gate"; summary: ShareSummary }
@@ -56,7 +59,7 @@ type GateState =
       email: string;
     };
 
-type CalculatorEmbedProps = {
+export type CalculatorEmbedProps = {
   persona: CalculatorPersona;
   onPersonaChange: (persona: CalculatorPersona) => void;
 };
@@ -84,7 +87,7 @@ export function CalculatorEmbed({
     [onPersonaChange],
   );
 
-  const handleDraftSnapshot = useCallback((snapshot: DraftSnapshot) => {
+  const handleDraftSnapshot = useCallback((snapshot: DraftSnapshot | FullDealSnapshotV1) => {
     setGate({ step: "save_gate", snapshot });
     setEmailInput("");
   }, []);
@@ -120,10 +123,16 @@ export function CalculatorEmbed({
       setGate({ step: "save_submitting", snapshot: gate.snapshot, email });
       trackLeadEmailSubmitted(persona);
 
-      const mapped = mapWidgetInputsToCanonical(gate.snapshot.inputs, {
-        floor_multiple: floor,
-        ceiling_multiple: ceiling,
-      });
+      const snapshotInputs = "inputs" in gate.snapshot
+        ? (gate.snapshot as DraftSnapshot).inputs
+        : null;
+
+      const mapped = snapshotInputs
+        ? mapWidgetInputsToCanonical(snapshotInputs, {
+            floor_multiple: floor,
+            ceiling_multiple: ceiling,
+          })
+        : { ok: false as const, field: "inputs", message: "FullDealSnapshotV1 — inputs on deal_terms" };
 
       if (!mapped.ok) {
         console.warn(

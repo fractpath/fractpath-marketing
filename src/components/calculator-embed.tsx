@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, type FormEvent } from "react";
+import { useCallback, useState, useEffect, useRef, type FormEvent } from "react";
 import { Component, type ReactNode } from "react";
 import {
   FractPathCalculatorWidget,
@@ -23,6 +23,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   trackEvent,
   trackPersonaSelected,
@@ -59,6 +66,43 @@ type GateState =
       email: string;
     };
 
+function isFullDealSnapshot(snap: WidgetSnapshot): snap is FullDealSnapshotV1 {
+  return "deal_terms" in snap && !("inputs" in snap);
+}
+
+function extractInputsFromSnapshot(snap: WidgetSnapshot): Record<string, unknown> {
+  if ("inputs" in snap && snap.inputs) {
+    return snap.inputs as Record<string, unknown>;
+  }
+  if (isFullDealSnapshot(snap) && snap.deal_terms) {
+    return {
+      homeValue: snap.deal_terms.property_value,
+      initialBuyAmount: snap.deal_terms.upfront_payment,
+      termYears: snap.deal_terms.contract_maturity_years,
+      annualGrowthRate: snap.assumptions?.annual_appreciation ?? 0.03,
+      monthlyPayment: snap.deal_terms.monthly_payment,
+      numberOfPayments: snap.deal_terms.number_of_payments,
+      floorMultiple: snap.deal_terms.floor_multiple,
+      ceilingMultiple: snap.deal_terms.ceiling_multiple,
+      downsideMode: snap.deal_terms.downside_mode,
+      platformFee: snap.deal_terms.platform_fee,
+      exitFeePct: snap.deal_terms.exit_fee_pct,
+      servicingFeeMonthly: snap.deal_terms.servicing_fee_monthly,
+      minimumHoldYears: snap.deal_terms.minimum_hold_years,
+      liquidityTriggerYear: snap.deal_terms.liquidity_trigger_year,
+      contractMaturityYears: snap.deal_terms.contract_maturity_years,
+    };
+  }
+  return {};
+}
+
+function extractBasicResultsFromSnapshot(snap: WidgetSnapshot): Record<string, unknown> {
+  if ("basic_results" in snap && snap.basic_results) {
+    return snap.basic_results as Record<string, unknown>;
+  }
+  return {};
+}
+
 export type CalculatorEmbedProps = {
   persona: CalculatorPersona;
   onPersonaChange: (persona: CalculatorPersona) => void;
@@ -71,6 +115,7 @@ export function CalculatorEmbed({
   const [gate, setGate] = useState<GateState>({ step: "idle" });
   const [emailInput, setEmailInput] = useState("");
   const [widgetError, setWidgetError] = useState(false);
+  const emailRef = useRef<HTMLInputElement>(null);
 
   const [floorMultiple, setFloorMultiple] = useState(
     DEAL_TERMS_DEFAULTS.floor_multiple.toString(),
@@ -78,6 +123,12 @@ export function CalculatorEmbed({
   const [ceilingMultiple, setCeilingMultiple] = useState(
     DEAL_TERMS_DEFAULTS.ceiling_multiple.toString(),
   );
+
+  useEffect(() => {
+    if (gate.step === "save_gate" || gate.step === "share_gate") {
+      requestAnimationFrame(() => emailRef.current?.focus());
+    }
+  }, [gate.step]);
 
   const handlePersonaChange = useCallback(
     (newPersona: CalculatorPersona) => {
@@ -88,7 +139,12 @@ export function CalculatorEmbed({
   );
 
   const handleDraftSnapshot = useCallback((snapshot: WidgetSnapshot) => {
-    console.log("[widget] draft snapshot emitted", snapshot); // Debug log
+    console.log("[widget] draft snapshot emitted", {
+      type: isFullDealSnapshot(snapshot) ? "FullDealSnapshotV1" : "DraftSnapshot",
+      hasInputs: "inputs" in snapshot,
+      hasDealTerms: "deal_terms" in snapshot,
+      hasBasicResults: "basic_results" in snapshot,
+    });
     setGate({ step: "save_gate", snapshot });
     setEmailInput("");
   }, []);
@@ -102,6 +158,23 @@ export function CalculatorEmbed({
     trackEvent(event);
   }, []);
 
+  const closeModal = useCallback(() => {
+    setGate({ step: "idle" });
+  }, []);
+
+  const isSaveModalOpen =
+    gate.step === "save_gate" ||
+    gate.step === "save_submitting" ||
+    gate.step === "save_error";
+
+  const isShareModalOpen =
+    gate.step === "share_gate" ||
+    gate.step === "share_submitting" ||
+    gate.step === "share_error";
+
+  const isDoneModalOpen =
+    gate.step === "save_done" || gate.step === "share_done";
+
   const handleSaveSubmit = useCallback(
     async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -114,66 +187,36 @@ export function CalculatorEmbed({
       const ceiling = Number.parseFloat(ceilingMultiple);
 
       if (!(floor > 0) || !(ceiling > 0) || floor > ceiling) {
-        console.warn("[canonical-mapper] invalid deal terms", {
-          floor,
-          ceiling,
-        });
+        console.warn("[canonical-mapper] invalid deal terms", { floor, ceiling });
         return;
       }
 
       setGate({ step: "save_submitting", snapshot: gate.snapshot, email });
       trackLeadEmailSubmitted(persona);
 
-      const snap = gate.snapshot as WidgetSnapshot;
+      const safeInputs = extractInputsFromSnapshot(gate.snapshot);
+      const safeBasicResults = extractBasicResultsFromSnapshot(gate.snapshot);
 
-      // Ensure inputs exist even for FullDealSnapshotV1
-      const safeInputs =
-        "inputs" in snap
-          ? snap.inputs
-          : snap.deal_terms
-            ? {
-                homeValue: snap.deal_terms.property_value,
-                initialBuyAmount: snap.deal_terms.upfront_payment,
-                monthlyPayment: snap.deal_terms.monthly_payment,
-                numberOfPayments: snap.deal_terms.number_of_payments,
-                floorMultiple: snap.deal_terms.floor_multiple,
-                ceilingMultiple: snap.deal_terms.ceiling_multiple,
-                downsideMode: snap.deal_terms.downside_mode,
-                platformFee: snap.deal_terms.platform_fee,
-                exitFeePct: snap.deal_terms.exit_fee_pct,
-                servicingFeeMonthly: snap.deal_terms.servicing_fee_monthly,
-                minimumHoldYears: snap.deal_terms.minimum_hold_years,
-                liquidityTriggerYear: snap.deal_terms.liquidity_trigger_year,
-                contractMaturityYears: snap.deal_terms.contract_maturity_years,
-                termYears: snap.deal_terms.contract_maturity_years, // fallback
-                annualGrowthRate: snap.assumptions?.annual_appreciation ?? 0.03,
-              }
-            : {};
-
-      const draftSnapshotForLead: DraftSnapshot = {
-        ...snap,
+      const draftSnapshotForLead: Record<string, unknown> = {
+        ...gate.snapshot,
         schema_version: "1",
         contract_version: "10.1.0",
         engine_version: "10.1.0",
         calculator_schema_version: "1",
         email,
         persona,
-        created_at: snap.created_at || new Date().toISOString(),
+        created_at: gate.snapshot.created_at || new Date().toISOString(),
         inputs: safeInputs,
-        basic_results: snap.basic_results || {},
+        basic_results: safeBasicResults,
       };
 
-      const mapped = mapWidgetInputsToCanonical(safeInputs, {
-        floor_multiple: floor,
-        ceiling_multiple: ceiling,
-      });
+      const mapped = mapWidgetInputsToCanonical(
+        safeInputs as { homeValue: number; initialBuyAmount: number; termYears: number; annualGrowthRate: number },
+        { floor_multiple: floor, ceiling_multiple: ceiling },
+      );
 
       if (!mapped.ok) {
-        console.warn(
-          "[canonical-mapper] mapping failed:",
-          mapped.field,
-          mapped.message,
-        );
+        console.warn("[canonical-mapper] mapping failed:", mapped.field, mapped.message);
       }
 
       try {
@@ -190,24 +233,26 @@ export function CalculatorEmbed({
 
         const data = await res.json();
 
-        if (data.resume_token) {
-          const rawResumeUrl =
-            typeof data.resumeUrl === "string" ? data.resumeUrl : "";
+        if (data.resume_token || data.token) {
+          const token = data.resume_token || data.token;
+          console.log("[save-continue] success: token received", { persona, email });
+
+          const rawResumeUrl = typeof data.resumeUrl === "string" ? data.resumeUrl : "";
           const continueUrl = rawResumeUrl.startsWith("http")
             ? rawResumeUrl
             : rawResumeUrl.startsWith("/")
               ? `${appBase}${rawResumeUrl}`
-              : `${appBase}/resume?token=${encodeURIComponent(String(data.resume_token))}`;
+              : `${appBase}/resume?token=${encodeURIComponent(String(token))}`;
+
+          if (process.env.NODE_ENV !== "production") {
+            console.log("[save-continue] navigation", { appBase, token, continueUrl });
+          }
 
           window.location.assign(continueUrl);
           return;
         }
 
-        console.warn(
-          "[save-continue] failure:",
-          data.error || "unknown error",
-          { persona, email },
-        );
+        console.warn("[save-continue] failure:", data.error || "unknown error", { persona, email });
         setGate({
           step: "save_error",
           message: data.error || "Something went wrong. Please try again.",
@@ -227,12 +272,75 @@ export function CalculatorEmbed({
     [gate, emailInput, persona, floorMultiple, ceilingMultiple],
   );
 
-  // shareSubmit remains unchanged
-  // ... rest of the UI including forms/cards remains the same
+  const handleShareSubmit = useCallback(
+    async (e: FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      if (gate.step !== "share_gate") return;
+
+      const email = emailInput.trim();
+      if (!email || !email.includes("@")) return;
+
+      setGate({ step: "share_submitting", summary: gate.summary, email });
+      trackCustomEvent("share_clicked", { persona });
+
+      try {
+        const res = await fetch("/api/share", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            to_email: email,
+            shareSummary: gate.summary,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (data.share_token || data.ok) {
+          console.log("[share] success: share_token received", { to_email: email });
+          setGate({ step: "share_done" });
+        } else {
+          console.warn("[share] failure:", data.error || "unknown error", { to_email: email });
+          setGate({
+            step: "share_error",
+            message: data.error || "Something went wrong. Please try again.",
+            summary: gate.summary,
+            email,
+          });
+        }
+      } catch (err) {
+        console.error("[share] network error:", err);
+        setGate({
+          step: "share_error",
+          message: "Network error. Please check your connection and try again.",
+          summary: gate.summary,
+          email: emailInput.trim(),
+        });
+      }
+    },
+    [gate, emailInput, persona],
+  );
+
+  if (widgetError) {
+    return (
+      <Card className="mx-auto max-w-2xl rounded-2xl">
+        <CardContent className="flex min-h-[200px] flex-col items-center justify-center gap-4 p-8 text-center">
+          <p className="text-lg font-medium text-muted-foreground">
+            Calculator Unavailable
+          </p>
+          <p className="max-w-md text-sm text-muted-foreground">
+            The scenario calculator could not be loaded. Please refresh the page
+            or try again later.
+          </p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Refresh Page
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Persona selection */}
       <div className="mx-auto flex max-w-[920px] items-center justify-center gap-2">
         {PERSONA_OPTIONS.map((opt) => (
           <Button
@@ -246,35 +354,210 @@ export function CalculatorEmbed({
         ))}
       </div>
 
-      {/* Widget */}
       <div className="mx-auto max-w-[920px]">
         <WidgetErrorBoundary onError={() => setWidgetError(true)}>
           <FractPathCalculatorWidget
             persona={persona}
             mode="marketing"
-            onDraftSnapshot={(snap) => handleDraftSnapshot(snap)}
+            onDraftSnapshot={handleDraftSnapshot}
             onShareSummary={handleShareSummary}
             onEvent={handleEvent}
           />
         </WidgetErrorBoundary>
       </div>
 
-      {/* Save & Share forms rendered based on gate.step */}
-      {/* ... leave rest of the form UI unchanged ... */}
+      <Dialog open={isSaveModalOpen} onOpenChange={(open) => { if (!open) closeModal(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Save Your Scenario</DialogTitle>
+            <DialogDescription>
+              Enter your email to save this scenario and continue in the app.
+              This is for scenario modeling purposes only and does not constitute financial advice.
+            </DialogDescription>
+          </DialogHeader>
+
+          {gate.step === "save_gate" && (
+            <form onSubmit={handleSaveSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="gate-email">Email</Label>
+                <Input
+                  ref={emailRef}
+                  id="gate-email"
+                  type="email"
+                  placeholder="you@example.com"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="space-y-3 rounded-xl border border-border/60 p-3">
+                <div className="text-sm font-medium">Deal terms</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="gate-floor">Floor multiple</Label>
+                    <Input
+                      id="gate-floor"
+                      inputMode="decimal"
+                      placeholder="0.8"
+                      value={floorMultiple}
+                      onChange={(e) => setFloorMultiple(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gate-ceiling">Ceiling multiple</Label>
+                    <Input
+                      id="gate-ceiling"
+                      inputMode="decimal"
+                      placeholder="2.0"
+                      value={ceilingMultiple}
+                      onChange={(e) => setCeilingMultiple(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Defaults shown. These terms are editable in the app.
+                </p>
+              </div>
+              <Button type="submit" className="w-full">
+                Save &amp; Continue
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={closeModal}
+              >
+                Cancel
+              </Button>
+            </form>
+          )}
+
+          {gate.step === "save_submitting" && (
+            <div className="flex items-center justify-center gap-3 py-6">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <p className="text-sm text-muted-foreground">Saving your scenario...</p>
+            </div>
+          )}
+
+          {gate.step === "save_error" && (
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-destructive">{gate.message}</p>
+              <div className="flex justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setGate({ step: "save_gate", snapshot: gate.snapshot })}
+                >
+                  Try Again
+                </Button>
+                <Button variant="ghost" size="sm" onClick={closeModal}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isShareModalOpen} onOpenChange={(open) => { if (!open) closeModal(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Share This Scenario</DialogTitle>
+            <DialogDescription>
+              Send an illustrative scenario summary to someone. This is non-binding
+              and for informational purposes only.
+            </DialogDescription>
+          </DialogHeader>
+
+          {gate.step === "share_gate" && (
+            <form onSubmit={handleShareSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="share-email">Recipient Email</Label>
+                <Input
+                  ref={emailRef}
+                  id="share-email"
+                  type="email"
+                  placeholder="recipient@example.com"
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
+              <Button type="submit" className="w-full">
+                Share Scenario
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={closeModal}
+              >
+                Cancel
+              </Button>
+            </form>
+          )}
+
+          {gate.step === "share_submitting" && (
+            <div className="flex items-center justify-center gap-3 py-6">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <p className="text-sm text-muted-foreground">Sharing your scenario...</p>
+            </div>
+          )}
+
+          {gate.step === "share_error" && (
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-destructive">{gate.message}</p>
+              <div className="flex justify-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setGate({ step: "share_gate", summary: gate.summary })}
+                >
+                  Try Again
+                </Button>
+                <Button variant="ghost" size="sm" onClick={closeModal}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isDoneModalOpen} onOpenChange={(open) => { if (!open) closeModal(); }}>
+        <DialogContent>
+          {gate.step === "save_done" && (
+            <div className="py-4 text-center">
+              <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                Saved! Redirecting you to the app...
+              </p>
+            </div>
+          )}
+          {gate.step === "share_done" && (
+            <div className="space-y-3 py-4 text-center">
+              <DialogHeader>
+                <DialogTitle>Shared Successfully</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                The recipient will receive an illustrative scenario summary.
+              </p>
+              <Button variant="ghost" size="sm" onClick={closeModal}>
+                Done
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-// -----------------------------
-// Widget Error Boundary
-// -----------------------------
 type ErrorBoundaryProps = { children: ReactNode; onError: () => void };
 type ErrorBoundaryState = { hasError: boolean };
 
-class WidgetErrorBoundary extends Component<
-  ErrorBoundaryProps,
-  ErrorBoundaryState
-> {
+class WidgetErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };

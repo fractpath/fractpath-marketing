@@ -64,8 +64,8 @@ function containsFullOnlyKeys(snapshot: Record<string, unknown>): boolean {
 function createMinimalDraftSnapshot(persona: string): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
-    contract_version: "v1",
-    schema_version: "draft_v1",
+    contract_version: "10.2.0",
+    schema_version: "1",
     created_at: now,
     persona,
     inputs: {
@@ -192,6 +192,14 @@ export async function POST(request: NextRequest) {
       { error: "Rejected: payload contains full-only fields" },
       { status: 422 },
     );
+
+  const snap = draftSnapshot as Record<string, unknown>;
+  if (snap.contract_version !== "10.2.0" || snap.schema_version !== "1") {
+    return NextResponse.json(
+      { error: "Expected canonical snapshot 10.2.0 / schema 1" },
+      { status: 422 },
+    );
+  }
 
   // Non-blocking CRM write
   hubspotUpsert(email, JSON.stringify(draftSnapshot), persona).catch(() => {});

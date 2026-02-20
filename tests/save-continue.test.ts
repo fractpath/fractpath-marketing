@@ -6,10 +6,10 @@ const EMBED_PATH = path.resolve("src/components/calculator-embed.tsx");
 const EMBED_SRC = fs.readFileSync(EMBED_PATH, "utf-8");
 
 describe("FullDealSnapshotV1 canonical compliance", () => {
-  it("always emits contract_version 10.1.0", () => {
+  it("always emits contract_version 10.2.0", () => {
     const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
     const block = EMBED_SRC.slice(idx, idx + 600);
-    expect(block).toContain('contract_version: "10.1.0"');
+    expect(block).toContain('contract_version: "10.2.0"');
   });
 
   it("always emits schema_version as string '1'", () => {
@@ -18,16 +18,16 @@ describe("FullDealSnapshotV1 canonical compliance", () => {
     expect(block).toContain('schema_version: "1"');
   });
 
-  it("always emits engine_version 10.1.0", () => {
+  it("always emits engine_version 10.2.0", () => {
     const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
     const block = EMBED_SRC.slice(idx, idx + 600);
-    expect(block).toContain('engine_version: "10.1.0"');
+    expect(block).toContain('engine_version: "10.2.0"');
   });
 
-  it("always emits compute_version 10.1.0", () => {
+  it("always emits compute_version 10.2.0", () => {
     const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
     const block = EMBED_SRC.slice(idx, idx + 600);
-    expect(block).toContain('compute_version: "10.1.0"');
+    expect(block).toContain('compute_version: "10.2.0"');
   });
 
   it("includes deal_terms in snapshot", () => {

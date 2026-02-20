@@ -266,10 +266,10 @@ export function CalculatorEmbed({
       const now = new Date().toISOString();
 
       const draftSnapshotForLead: Record<string, unknown> = {
-        contract_version: "10.1.0",
+        contract_version: "10.2.0",
         schema_version: "1",
-        engine_version: "10.1.0",
-        compute_version: "10.1.0",
+        engine_version: "10.2.0",
+        compute_version: "10.2.0",
         email,
         persona,
         mode: "marketing",

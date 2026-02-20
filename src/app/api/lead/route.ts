@@ -160,6 +160,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
+  // TEMPORARY — Phase 2.1 wire-level payload capture. REMOVE THIS LOG IN PHASE 5 CLEANUP
+  {
+    const snap = body.draftSnapshot as Record<string, unknown> | undefined;
+    const dealTerms = snap?.deal_terms as Record<string, unknown> | undefined;
+    const emailRaw = typeof body.email === "string" ? body.email.trim() : "";
+    console.log("[phase2.1] /api/lead payload probe:", JSON.stringify({
+      contract_version: snap?.contract_version ?? null,
+      schema_version: snap?.schema_version ?? null,
+      compute_version: snap?.compute_version ?? null,
+      engine_version: snap?.engine_version ?? null,
+      has_deal_terms: !!dealTerms,
+      deal_terms_key_count: dealTerms ? Object.keys(dealTerms).length : 0,
+      has_email: !!emailRaw && emailRaw.includes("@"),
+    }));
+  }
+
   const email = typeof body.email === "string" ? body.email.trim() : "";
   const persona = typeof body.persona === "string" ? body.persona.trim() : "";
 

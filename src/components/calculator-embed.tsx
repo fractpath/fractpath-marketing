@@ -16,6 +16,13 @@ import {
   mapWidgetInputsToCanonical,
 } from "@/lib/canonicalInputMapper";
 
+import {
+  CONTRACT_VERSION,
+  SCHEMA_VERSION,
+  COMPUTE_VERSION,
+  ENGINE_VERSION,
+} from "@/lib/contractVersion";
+
 const appBase = String(
   process.env.NEXT_PUBLIC_FRACTPATH_APP_URL || "https://app.fractpath.com",
 ).replace(/\/+$/, "");
@@ -266,10 +273,10 @@ export function CalculatorEmbed({
       const now = new Date().toISOString();
 
       const draftSnapshotForLead: Record<string, unknown> = {
-        contract_version: "10.2.0",
-        schema_version: "1",
-        engine_version: "10.2.0",
-        compute_version: "10.2.0",
+        contract_version: CONTRACT_VERSION,
+        schema_version: SCHEMA_VERSION,
+        engine_version: ENGINE_VERSION,
+        compute_version: COMPUTE_VERSION,
         email,
         persona,
         mode: "marketing",

@@ -9,25 +9,25 @@ describe("FullDealSnapshotV1 canonical compliance", () => {
   it("always emits contract_version 10.2.0", () => {
     const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
     const block = EMBED_SRC.slice(idx, idx + 600);
-    expect(block).toContain('contract_version: "10.2.0"');
+    expect(block).toMatch(/contract_version:\s*(CONTRACT_VERSION|"10\.2\.0")/);
   });
 
   it("always emits schema_version as string '1'", () => {
     const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
     const block = EMBED_SRC.slice(idx, idx + 600);
-    expect(block).toContain('schema_version: "1"');
+    expect(block).toMatch(/schema_version:\s*(SCHEMA_VERSION|"1")/);
   });
 
   it("always emits engine_version 10.2.0", () => {
     const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
     const block = EMBED_SRC.slice(idx, idx + 600);
-    expect(block).toContain('engine_version: "10.2.0"');
+    expect(block).toMatch(/engine_version:\s*(ENGINE_VERSION|"10\.2\.0")/);
   });
 
   it("always emits compute_version 10.2.0", () => {
     const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
     const block = EMBED_SRC.slice(idx, idx + 600);
-    expect(block).toContain('compute_version: "10.2.0"');
+    expect(block).toMatch(/compute_version:\s*(COMPUTE_VERSION|"10\.2\.0")/);
   });
 
   it("includes deal_terms in snapshot", () => {

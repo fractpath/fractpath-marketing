@@ -40,11 +40,11 @@ FractPath marketing homepage - a Next.js application for fractional real estate 
 - **Framework**: Next.js 16 (App Router, Turbopack)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS + shadcn/ui
-- **Widget**: fractpath-calculator-widget (local tarball: fractpath-calculator-widget-0.0.0.tgz)
+- **Widget**: fractpath-calculator-widget v1.0.0 (local tarball: fractpath-calculator-widget-1.0.0.tgz, GitHub SHA 3ed0ee2b)
 
 ## Widget Integration
-- Widget package: installed from local tarball `file:./fractpath-calculator-widget-0.0.0.tgz`
-- Tarball built from GitHub source `fractpath-calculator-widget-src/` directory
+- Widget package: installed from local tarball `file:./fractpath-calculator-widget-1.0.0.tgz`
+- Tarball built from GitHub source (SHA 3ed0ee2b1be4cc969982dc21d1b6e675f5830374)
 - Ambient `.d.ts` file mirrors real widget types (needed because tsc can't resolve from the tarball's dist-types with bundler resolution)
 - Marketing does NOT contain calculator math — widget is canonical source of truth
 - Widget provides: FractPathCalculatorWidget component, DraftSnapshot, ShareSummary, WidgetEvent types
@@ -117,6 +117,7 @@ If the upstream widget changes, rebuild the tarball:
 - No local recompute in marketing — widget owns UI computation, app owns canonical compute
 
 ## Recent Changes
+- 2026-02-20: Sprint 11 widget upgrade — Upgraded widget from v0.0.0 to v1.0.0 (GitHub SHA 3ed0ee2b). Widget now exports Sprint 11 components (DealSnapshotView, DealEditModal, MARKETING_PERSONAS). Tarball rebuilt from GitHub source. All 41 tests pass (35 save-continue + 6 drift guards). E2E mint handshake verified (HTTP 201, token + resumeUrl). No stale version literals. Top-level-only imports enforced. replit.md updated.
 - 2026-02-20: Phase 2 — Contract version bump to 10.2.0. Updated calculator-embed.tsx (contract_version, engine_version, compute_version all "10.2.0"). Added shape assert guard in /api/lead route: rejects any snapshot where contract_version !== "10.2.0" or schema_version !== "1" with 422. Cleaned up legacy createMinimalDraftSnapshot fallback (was "v1"/"draft_v1", now "10.2.0"/"1"). Tests updated: 35 save-continue + 6 drift guards pass. Build passes. Grep confirms no stale "10.1.0", "1.0.0", "draft_v1", or schema_version "v1" in touched files. 0 LSP errors.
 - 2026-02-18: FullDealSnapshotV1 canonical compliance — Enforced canonical v10.1.0 snapshot shape: every emitted snapshot now includes deal_terms (all 18 fields), assumptions (annual_appreciation, closing_cost_pct, exit_year), compute_version/contract_version/engine_version "10.1.0", schema_version "1", mode "marketing", computed_at timestamp. Removed floor/ceiling multiple inputs from Save modal (now defaulted from DEAL_TERMS_DEFAULTS). Modal collects only email; role via persona tabs. Added buildCanonicalDealTerms, buildCanonicalScenario, buildCanonicalInputs, buildBasicResults helpers. Legacy DraftSnapshot shapes are upconverted to canonical form. 35 save-continue tests (canonical compliance, snapshot injection, modal behavior, no floor/ceiling in modal, event tracking, resume navigation) + 6 drift guards all pass. 4/4 API curl tests pass (canonical 201, missing 422, full_results rejection 422, buyer 201). 0 LSP errors.
 - 2026-02-18: Save & Continue modal overlay + snapshot injection fix — Converted inline save/share forms to Dialog modal overlays with shaded background, Esc/Cancel close, auto-focus email input. Fixed broken render (gate forms were missing from JSX). Added extractInputsFromSnapshot/extractBasicResultsFromSnapshot helpers for FullDealSnapshotV1→DraftSnapshot field mapping. Email, persona, created_at injected inside draftSnapshot before POST. Added 18 save-continue tests (snapshot injection, modal behavior, event tracking, resume navigation). All 5 API validation tests pass, 6/6 drift guards pass, 0 LSP errors. No compute imports. No stubs.

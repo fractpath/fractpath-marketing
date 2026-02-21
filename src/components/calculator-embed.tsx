@@ -293,90 +293,122 @@ export function CalculatorEmbed({
   const isDoneModalOpen =
     gate.step === "save_done" || gate.step === "share_done";
 
-  // ...
-
   const handleSaveSubmit = useCallback(
     async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-
-      // 1) Gate / eligibility checks (keep yours if you already have them)
-
-      // 2) Build a deterministic canonical payload
-      // IMPORTANT: do NOT recompute here; only package the already-canonical data produced by the widget/engine.
-      // Replace `canonical` with your actual source object (from the widget/gate state).
-      const canonical = "snapshot" in gate ? gate.snapshot : undefined;
-      if (!canonical) {
-        // optional: set error UI
-        return;
-      }
+      if (gate.step !== "save_gate") return;
 
       const email = emailInput.trim();
       if (!email || !email.includes("@")) return;
 
-      const dealTerms = buildCanonicalDealTerms(canonical);
-      const scenario = buildCanonicalScenario(canonical);
-      const inputs = buildCanonicalInputs(canonical);
-      const basicResults = buildBasicResults(canonical);
+      setGate({ step: "save_submitting", snapshot: gate.snapshot, email });
+      trackLeadEmailSubmitted(persona);
 
-      const payload = {
+      const dealTerms = buildCanonicalDealTerms(gate.snapshot);
+      const scenario = buildCanonicalScenario(gate.snapshot);
+      const inputs = buildCanonicalInputs(gate.snapshot);
+      const basicResults = buildBasicResults(gate.snapshot);
+      const now = new Date().toISOString();
+
+      const draftSnapshotForLead: Record<string, unknown> = {
+        contract_version: CONTRACT_VERSION,
+        schema_version: SCHEMA_VERSION,
+        engine_version: ENGINE_VERSION,
+        compute_version: COMPUTE_VERSION,
         email,
         persona,
-        canonicalSnapshot: {
-          contract_version: CONTRACT_VERSION,
-          schema_version: SCHEMA_VERSION,
-          engine_version: ENGINE_VERSION,
-          compute_version: COMPUTE_VERSION,
-          deal_terms: dealTerms,
-          scenario,
-          assumptions: scenario,
-          inputs,
-          basic_results: basicResults,
-        },
+        mode: "marketing",
+        created_at: gate.snapshot.created_at || now,
+        computed_at: now,
+        deal_terms: dealTerms,
+        assumptions: scenario,
+        inputs,
+        basic_results: basicResults,
       };
 
-      // Guard against missing required canonical fields
-      const cs = payload.canonicalSnapshot;
-      if (
-        !cs.contract_version ||
-        !cs.schema_version ||
-        !cs.engine_version ||
-        !cs.compute_version ||
-        !cs.deal_terms ||
-        !cs.scenario ||
-        !cs.assumptions ||
-        !cs.inputs ||
-        !cs.basic_results
-      ) {
-        // optional: set error UI
-        return;
+      if (isFullDealSnapshot(gate.snapshot) && gate.snapshot.outputs) {
+        draftSnapshotForLead.outputs = gate.snapshot.outputs;
       }
 
-      // 3) POST to marketing API
-      const res = await fetch("/api/lead", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const mapped = mapWidgetInputsToCanonical(
+        inputs as {
+          homeValue: number;
+          initialBuyAmount: number;
+          termYears: number;
+          annualGrowthRate: number;
+        },
+      );
 
-      const data = await res.json().catch(() => null);
-
-      if (!res.ok || !data?.ok) {
-        // optional: set error UI w/ data?.error
-        return;
+      if (!mapped.ok) {
+        console.warn(
+          "[canonical-mapper] mapping note:",
+          mapped.field,
+          mapped.message,
+        );
       }
 
-      // 4) Navigate to resume URL (app base comes from NEXT_PUBLIC_FRACTPATH_APP_URL)
-      // Expect API to return token or resume_token; use whatever your /api/lead returns.
-      const resumeToken = data.resume_token ?? data.token;
-      if (!resumeToken) return;
+      try {
+        const res = await fetch("/api/lead", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email,
+            persona,
+            draftSnapshot: draftSnapshotForLead,
+            canonicalInputs: mapped.ok ? mapped.data : undefined,
+          }),
+        });
 
-      const appBase = process.env.NEXT_PUBLIC_FRACTPATH_APP_URL;
-      if (!appBase) {
-        // optional: set error UI
-        return;
+        const data = await res.json();
+
+        if (data.resume_token || data.token) {
+          const token = data.resume_token || data.token;
+          console.log("[save-continue] success: token received", {
+            persona,
+            email,
+          });
+
+          const rawResumeUrl =
+            typeof data.resumeUrl === "string" ? data.resumeUrl : "";
+          const continueUrl = rawResumeUrl.startsWith("http")
+            ? rawResumeUrl
+            : rawResumeUrl.startsWith("/")
+              ? `${appBase}${rawResumeUrl}`
+              : `${appBase}/resume?token=${encodeURIComponent(String(token))}`;
+
+          if (process.env.NODE_ENV !== "production") {
+            console.log("[save-continue] navigation", {
+              appBase,
+              token,
+              continueUrl,
+            });
+          }
+
+          window.location.assign(continueUrl);
+          return;
+        }
+
+        console.warn(
+          "[save-continue] failure:",
+          data.error || "unknown error",
+          { persona, email },
+        );
+        setGate({
+          step: "save_error",
+          message: data.error || "Something went wrong. Please try again.",
+          snapshot: gate.snapshot,
+          email,
+        });
+      } catch (err) {
+        console.error("[save-continue] network error:", err);
+        setGate({
+          step: "save_error",
+          message:
+            "Network error. Please check your connection and try again.",
+          snapshot: gate.snapshot,
+          email: emailInput.trim(),
+        });
       }
-
-      window.location.assign(`${appBase}/resume?token=${encodeURIComponent(resumeToken)}`);
     },
     [gate, emailInput, persona],
   );
@@ -500,7 +532,7 @@ export function CalculatorEmbed({
             </DialogDescription>
           </DialogHeader>
 
-          {gate.step === "save_gate" && (
+          {(gate.step === "save_gate" || gate.step === "save_submitting") && (
             <form onSubmit={handleSaveSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="gate-email">Email</Label>
@@ -513,29 +545,53 @@ export function CalculatorEmbed({
                   onChange={(e) => setEmailInput(e.target.value)}
                   required
                   autoFocus
+                  disabled={gate.step === "save_submitting"}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Save &amp; Continue
-              </Button>
               <Button
-                type="button"
-                variant="ghost"
+                type="submit"
                 className="w-full"
-                onClick={closeModal}
+                disabled={gate.step === "save_submitting"}
               >
-                Cancel
+                {gate.step === "save_submitting" ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg
+                      className="h-4 w-4 animate-spin"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Saving...
+                  </span>
+                ) : (
+                  "Save & Continue"
+                )}
               </Button>
+              {gate.step === "save_gate" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={closeModal}
+                >
+                  Cancel
+                </Button>
+              )}
             </form>
-          )}
-
-          {gate.step === "save_submitting" && (
-            <div className="flex items-center justify-center gap-3 py-6">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <p className="text-sm text-muted-foreground">
-                Saving your scenario...
-              </p>
-            </div>
           )}
 
           {gate.step === "save_error" && (

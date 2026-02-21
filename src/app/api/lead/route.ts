@@ -1,14 +1,21 @@
 // src/app/api/lead/route.ts
 import { NextRequest, NextResponse } from "next/server";
+import { randomBytes } from "node:crypto";
+import { Pool } from "pg";
 
 const HUBSPOT_ACCESS_TOKEN = process.env.HUBSPOT_ACCESS_TOKEN;
 const HUBSPOT_ENABLED =
   (process.env.HUBSPOT_ENABLED || "").toLowerCase() === "true";
 
-// Where mint happens (app owns draft_tokens table)
 const FRACTPATH_APP_URL = String(
   process.env.FRACTPATH_APP_URL || "https://app.fractpath.com",
 ).replace(/\/+$/, "");
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  max: 5,
+  idleTimeoutMillis: 30_000,
+});
 
 const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_WINDOW = 60_000;
@@ -25,9 +32,12 @@ function isRateLimited(ip: string): boolean {
   return entry.count > RATE_LIMIT_MAX;
 }
 
+function generateToken(): string {
+  return randomBytes(32).toString("hex");
+}
+
 const VALID_PERSONAS = ["homeowner", "buyer", "realtor"] as const;
 
-// Minimal required keys for DraftSnapshotV1
 const REQUIRED_SNAPSHOT_KEYS = [
   "contract_version",
   "schema_version",
@@ -37,7 +47,6 @@ const REQUIRED_SNAPSHOT_KEYS = [
   "basic_results",
 ] as const;
 
-// Keys that must never be sent from marketing
 const FULL_ONLY_KEYS = ["full_results", "settlements"] as const;
 
 function isValidDraftSnapshot(
@@ -60,7 +69,6 @@ function containsFullOnlyKeys(snapshot: Record<string, unknown>): boolean {
   return FULL_ONLY_KEYS.some((key) => key in snapshot);
 }
 
-// Minimal DraftSnapshot defaults (only used if caller omits draftSnapshot)
 function createMinimalDraftSnapshot(persona: string): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
@@ -79,7 +87,61 @@ function createMinimalDraftSnapshot(persona: string): Record<string, unknown> {
   };
 }
 
-// HubSpot integration (non-blocking)
+function buildDraftFromCanonical(
+  cs: Record<string, unknown>,
+  persona: string,
+): Record<string, unknown> {
+  const now = new Date().toISOString();
+  return {
+    contract_version: cs.contract_version ?? "10.2.0",
+    schema_version: cs.schema_version ?? "1",
+    engine_version: cs.engine_version ?? "10.2.0",
+    compute_version: cs.compute_version ?? "10.2.0",
+    created_at: (cs.created_at as string) || now,
+    computed_at: (cs.computed_at as string) || now,
+    persona,
+    mode: "marketing",
+    deal_terms: cs.deal_terms ?? {},
+    scenario: cs.scenario ?? {},
+    assumptions: cs.assumptions ?? {},
+    inputs: cs.inputs ?? {},
+    basic_results: cs.basic_results ?? {},
+  };
+}
+
+async function localMint(
+  snapshotJson: Record<string, unknown>,
+  contractVersion: string,
+  schemaVersion: string,
+): Promise<{ ok: true; token: string } | { ok: false; error: string }> {
+  const maxAttempts = 3;
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const token = generateToken();
+    try {
+      await pool.query(
+        `INSERT INTO draft_tokens (token, snapshot_json, contract_version, schema_version, source, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          token,
+          JSON.stringify(snapshotJson),
+          contractVersion,
+          schemaVersion,
+          "marketing",
+          expiresAt.toISOString(),
+        ],
+      );
+      return { ok: true, token };
+    } catch (err: any) {
+      if (err?.code === "23505" && attempt < maxAttempts) continue;
+      console.error("[local-mint] insert error:", err?.message ?? err);
+      return { ok: false, error: "local_mint_failed" };
+    }
+  }
+  return { ok: false, error: "local_mint_failed" };
+}
+
 async function hubspotUpsert(
   email: string,
   snapshotJson: string,
@@ -184,15 +246,7 @@ export async function POST(request: NextRequest) {
 
   if (!draftSnapshot && body.canonicalSnapshot) {
     const cs = body.canonicalSnapshot as Record<string, unknown>;
-
-    draftSnapshot = {
-      contract_version: cs.contract_version,
-      schema_version: cs.schema_version,
-      created_at: new Date().toISOString(),
-      persona,
-      inputs: cs.inputs ?? {},
-      basic_results: cs.basic_results ?? {},
-    };
+    draftSnapshot = buildDraftFromCanonical(cs, persona);
   }
 
   if (!draftSnapshot) {
@@ -219,20 +273,22 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Non-blocking CRM write
   hubspotUpsert(email, JSON.stringify(draftSnapshot), persona).catch(() => {});
 
-  // Build snapshot_json to send to app mint endpoint
   const snapshotJson: Record<string, unknown> = {
     draftSnapshot,
-    // Pass through canonical fields if present
     canonicalSnapshot: (body.canonicalSnapshot as unknown) ?? null,
     canonicalInputs: (body.canonicalInputs as unknown) ?? null,
-    // Optional: include email/persona metadata (non-sensitive)
-    meta: { source: "marketing", persona },
+    meta: { source: "marketing", persona, email },
   };
 
   const mintUrl = `${FRACTPATH_APP_URL}/api/draft-tokens/mint`;
+
+  let remoteMintOk = false;
+  let token: string | null = null;
+  let remoteResumeUrl: string | null = null;
+  let mintStatus: number | null = null;
+  let mintBody: string | null = null;
 
   try {
     const mintRes = await fetch(mintUrl, {
@@ -245,9 +301,13 @@ export async function POST(request: NextRequest) {
         snapshot_json: snapshotJson,
         source: "marketing",
       }),
+      signal: AbortSignal.timeout(8000),
     });
 
+    mintStatus = mintRes.status;
     const raw = await mintRes.text();
+    mintBody = raw.slice(0, 4000);
+
     let parsed: any = null;
     try {
       parsed = raw ? JSON.parse(raw) : null;
@@ -255,62 +315,69 @@ export async function POST(request: NextRequest) {
       parsed = null;
     }
 
-    if (!mintRes.ok) {
-      if (debug) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: "mint_failed",
-            mint_status: mintRes.status,
-            mint_body: raw.slice(0, 4000),
-          },
-          { status: 502 },
-        );
+    if (mintRes.ok) {
+      token = parsed?.token ?? parsed?.resume_token ?? null;
+      if (token && typeof token === "string") {
+        remoteMintOk = true;
+        remoteResumeUrl =
+          typeof parsed?.resumeUrl === "string"
+            ? parsed.resumeUrl
+            : `${FRACTPATH_APP_URL}/resume?token=${token}`;
       }
-      return NextResponse.json(
-        { ok: false, error: "mint_failed" },
-        { status: 502 },
-      );
     }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn("[lead] remote mint failed:", msg);
+    mintBody = msg;
+  }
 
-    const token = parsed?.token ?? parsed?.resume_token ?? null;
-    if (!token || typeof token !== "string") {
-      if (debug) {
-        return NextResponse.json(
-          {
-            ok: false,
-            error: "mint_missing_token",
-            mint_body: raw.slice(0, 4000),
-          },
-          { status: 502 },
-        );
-      }
-      return NextResponse.json(
-        { ok: false, error: "mint_missing_token" },
-        { status: 502 },
-      );
-    }
-
+  if (remoteMintOk && token) {
     return NextResponse.json(
       {
         ok: true,
         token,
-        // IMPORTANT: resume happens in app, not marketing
-        resumeUrl: `${FRACTPATH_APP_URL}/resume?token=${token}`,
+        resumeUrl: remoteResumeUrl,
       },
       { status: 201, headers: { "Cache-Control": "no-store" } },
     );
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
+  }
+
+  console.warn(
+    `[lead] remote mint failed (status=${mintStatus}), falling back to local mint`,
+  );
+
+  const localResult = await localMint(
+    snapshotJson,
+    String(snap.contract_version),
+    String(snap.schema_version),
+  );
+
+  if (!localResult.ok) {
     if (debug) {
       return NextResponse.json(
-        { ok: false, error: "mint_exception", message: msg },
+        {
+          ok: false,
+          error: "mint_failed",
+          mint_status: mintStatus,
+          mint_body: mintBody,
+          local_mint_error: localResult.error,
+        },
         { status: 502 },
       );
     }
     return NextResponse.json(
-      { ok: false, error: "mint_exception" },
+      { ok: false, error: "mint_failed" },
       { status: 502 },
     );
   }
+
+  return NextResponse.json(
+    {
+      ok: true,
+      token: localResult.token,
+      resumeUrl: `${FRACTPATH_APP_URL}/resume?token=${localResult.token}`,
+      mint_source: "local_fallback",
+    },
+    { status: 201, headers: { "Cache-Control": "no-store" } },
+  );
 }

@@ -164,7 +164,10 @@ export async function POST(request: NextRequest) {
   }
 
   const email = typeof body.email === "string" ? body.email.trim() : "";
-  const snapshot = body.snapshot;
+  const snapshot =
+    body.snapshot ??
+    body.canonicalSnapshot ??
+    body.draftSnapshot;
 
   if (!email || !email.includes("@")) {
     return NextResponse.json(

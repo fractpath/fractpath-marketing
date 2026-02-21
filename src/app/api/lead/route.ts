@@ -147,7 +147,9 @@ async function hubspotUpsert(
 }
 
 export async function POST(request: NextRequest) {
-  const debug = request.headers.get("x-fractpath-debug") === "1";
+  const debug =
+    request.headers.get("x-fractpath-debug") === "1" ||
+    request.nextUrl.searchParams.get("debug") === "1";
 
   const ip = request.headers.get("x-forwarded-for") ?? "unknown";
   if (isRateLimited(ip))
@@ -178,8 +180,24 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
 
-  const draftSnapshot =
-    (body.draftSnapshot as unknown) ?? createMinimalDraftSnapshot(persona);
+  let draftSnapshot = body.draftSnapshot as Record<string, unknown> | undefined;
+
+  if (!draftSnapshot && body.canonicalSnapshot) {
+    const cs = body.canonicalSnapshot as Record<string, unknown>;
+
+    draftSnapshot = {
+      contract_version: cs.contract_version,
+      schema_version: cs.schema_version,
+      created_at: new Date().toISOString(),
+      persona,
+      inputs: cs.inputs ?? {},
+      basic_results: cs.basic_results ?? {},
+    };
+  }
+
+  if (!draftSnapshot) {
+    draftSnapshot = createMinimalDraftSnapshot(persona);
+  }
 
   if (!isValidDraftSnapshot(draftSnapshot))
     return NextResponse.json(

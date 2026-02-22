@@ -134,7 +134,10 @@ async function localMint(
       );
       return { ok: true, token };
     } catch (err: unknown) {
-      if (err?.code === "23505" && attempt < maxAttempts) continue;
+      const code = (typeof err === "object" && err && "code" in err)
+        ? (err as { code?: unknown }).code
+        : undefined;
+      if (code === "23505" && attempt < maxAttempts) continue;
       console.error("[local-mint] insert error:", err?.message ?? err);
       return { ok: false, error: "local_mint_failed" };
     }

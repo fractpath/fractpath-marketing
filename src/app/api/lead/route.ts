@@ -133,7 +133,7 @@ async function localMint(
         ],
       );
       return { ok: true, token };
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (err?.code === "23505" && attempt < maxAttempts) continue;
       console.error("[local-mint] insert error:", err?.message ?? err);
       return { ok: false, error: "local_mint_failed" };
@@ -308,7 +308,7 @@ export async function POST(request: NextRequest) {
     const raw = await mintRes.text();
     mintBody = raw.slice(0, 4000);
 
-    let parsed: any = null;
+    let parsed: unknown = null;
     try {
       parsed = raw ? JSON.parse(raw) : null;
     } catch {

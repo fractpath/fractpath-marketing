@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useState, useEffect, useRef, type FormEvent } from "react";
+import {
+  useCallback,
+  useState,
+  useEffect,
+  useRef,
+  type FormEvent,
+} from "react";
 import { Component, type ReactNode } from "react";
 import {
   FractPathCalculatorWidget,
@@ -15,6 +21,13 @@ import {
   SCENARIO_DEFAULTS,
   mapWidgetInputsToCanonical,
 } from "@/lib/canonicalInputMapper";
+
+import {
+  CONTRACT_VERSION,
+  SCHEMA_VERSION,
+  COMPUTE_VERSION,
+  ENGINE_VERSION,
+} from "@/lib/contractVersion";
 
 const appBase = String(
   process.env.NEXT_PUBLIC_FRACTPATH_APP_URL || "https://app.fractpath.com",
@@ -71,27 +84,47 @@ function isFullDealSnapshot(snap: WidgetSnapshot): snap is FullDealSnapshotV1 {
   return "deal_terms" in snap;
 }
 
-function buildCanonicalDealTerms(snap: WidgetSnapshot): Record<string, unknown> {
+function buildCanonicalDealTerms(
+  snap: WidgetSnapshot,
+): Record<string, unknown> {
   if (isFullDealSnapshot(snap) && snap.deal_terms) {
     return {
       property_value: snap.deal_terms.property_value,
       upfront_payment: snap.deal_terms.upfront_payment,
-      monthly_payment: snap.deal_terms.monthly_payment ?? DEAL_TERMS_DEFAULTS.monthly_payment,
-      number_of_payments: snap.deal_terms.number_of_payments ?? DEAL_TERMS_DEFAULTS.number_of_payments,
+      monthly_payment:
+        snap.deal_terms.monthly_payment ?? DEAL_TERMS_DEFAULTS.monthly_payment,
+      number_of_payments:
+        snap.deal_terms.number_of_payments ??
+        DEAL_TERMS_DEFAULTS.number_of_payments,
       payback_window_start_year: DEAL_TERMS_DEFAULTS.payback_window_start_year,
       payback_window_end_year: DEAL_TERMS_DEFAULTS.payback_window_end_year,
       timing_factor_early: DEAL_TERMS_DEFAULTS.timing_factor_early,
       timing_factor_late: DEAL_TERMS_DEFAULTS.timing_factor_late,
-      floor_multiple: snap.deal_terms.floor_multiple ?? DEAL_TERMS_DEFAULTS.floor_multiple,
-      ceiling_multiple: snap.deal_terms.ceiling_multiple ?? DEAL_TERMS_DEFAULTS.ceiling_multiple,
-      downside_mode: snap.deal_terms.downside_mode ?? DEAL_TERMS_DEFAULTS.downside_mode,
-      contract_maturity_years: snap.deal_terms.contract_maturity_years ?? DEAL_TERMS_DEFAULTS.contract_maturity_years,
-      liquidity_trigger_year: snap.deal_terms.liquidity_trigger_year ?? DEAL_TERMS_DEFAULTS.liquidity_trigger_year,
-      minimum_hold_years: snap.deal_terms.minimum_hold_years ?? DEAL_TERMS_DEFAULTS.minimum_hold_years,
-      platform_fee: snap.deal_terms.platform_fee ?? DEAL_TERMS_DEFAULTS.platform_fee,
-      servicing_fee_monthly: snap.deal_terms.servicing_fee_monthly ?? DEAL_TERMS_DEFAULTS.servicing_fee_monthly,
-      exit_fee_pct: snap.deal_terms.exit_fee_pct ?? DEAL_TERMS_DEFAULTS.exit_fee_pct,
-      duration_yield_floor_enabled: DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
+      floor_multiple:
+        snap.deal_terms.floor_multiple ?? DEAL_TERMS_DEFAULTS.floor_multiple,
+      ceiling_multiple:
+        snap.deal_terms.ceiling_multiple ??
+        DEAL_TERMS_DEFAULTS.ceiling_multiple,
+      downside_mode:
+        snap.deal_terms.downside_mode ?? DEAL_TERMS_DEFAULTS.downside_mode,
+      contract_maturity_years:
+        snap.deal_terms.contract_maturity_years ??
+        DEAL_TERMS_DEFAULTS.contract_maturity_years,
+      liquidity_trigger_year:
+        snap.deal_terms.liquidity_trigger_year ??
+        DEAL_TERMS_DEFAULTS.liquidity_trigger_year,
+      minimum_hold_years:
+        snap.deal_terms.minimum_hold_years ??
+        DEAL_TERMS_DEFAULTS.minimum_hold_years,
+      platform_fee:
+        snap.deal_terms.platform_fee ?? DEAL_TERMS_DEFAULTS.platform_fee,
+      servicing_fee_monthly:
+        snap.deal_terms.servicing_fee_monthly ??
+        DEAL_TERMS_DEFAULTS.servicing_fee_monthly,
+      exit_fee_pct:
+        snap.deal_terms.exit_fee_pct ?? DEAL_TERMS_DEFAULTS.exit_fee_pct,
+      duration_yield_floor_enabled:
+        DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
     };
   }
   if ("inputs" in snap && snap.inputs) {
@@ -108,13 +141,15 @@ function buildCanonicalDealTerms(snap: WidgetSnapshot): Record<string, unknown> 
       floor_multiple: DEAL_TERMS_DEFAULTS.floor_multiple,
       ceiling_multiple: DEAL_TERMS_DEFAULTS.ceiling_multiple,
       downside_mode: DEAL_TERMS_DEFAULTS.downside_mode,
-      contract_maturity_years: inp.termYears ?? DEAL_TERMS_DEFAULTS.contract_maturity_years,
+      contract_maturity_years:
+        inp.termYears ?? DEAL_TERMS_DEFAULTS.contract_maturity_years,
       liquidity_trigger_year: DEAL_TERMS_DEFAULTS.liquidity_trigger_year,
       minimum_hold_years: DEAL_TERMS_DEFAULTS.minimum_hold_years,
       platform_fee: DEAL_TERMS_DEFAULTS.platform_fee,
       servicing_fee_monthly: DEAL_TERMS_DEFAULTS.servicing_fee_monthly,
       exit_fee_pct: DEAL_TERMS_DEFAULTS.exit_fee_pct,
-      duration_yield_floor_enabled: DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
+      duration_yield_floor_enabled:
+        DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
     };
   }
   return {
@@ -135,7 +170,8 @@ function buildCanonicalDealTerms(snap: WidgetSnapshot): Record<string, unknown> 
     platform_fee: DEAL_TERMS_DEFAULTS.platform_fee,
     servicing_fee_monthly: DEAL_TERMS_DEFAULTS.servicing_fee_monthly,
     exit_fee_pct: DEAL_TERMS_DEFAULTS.exit_fee_pct,
-    duration_yield_floor_enabled: DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
+    duration_yield_floor_enabled:
+      DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
   };
 }
 
@@ -144,7 +180,8 @@ function buildCanonicalScenario(snap: WidgetSnapshot): Record<string, unknown> {
     return {
       annual_appreciation: snap.assumptions.annual_appreciation ?? 0.03,
       closing_cost_pct: SCENARIO_DEFAULTS.closing_cost_pct,
-      exit_year: snap.deal_terms?.contract_maturity_years ?? SCENARIO_DEFAULTS.exit_year,
+      exit_year:
+        snap.deal_terms?.contract_maturity_years ?? SCENARIO_DEFAULTS.exit_year,
     };
   }
   if ("inputs" in snap && snap.inputs) {
@@ -171,10 +208,16 @@ function buildCanonicalInputs(snap: WidgetSnapshot): Record<string, unknown> {
       homeValue: dt.property_value,
       initialBuyAmount: dt.upfront_payment,
       termYears: dt.contract_maturity_years,
-      annualGrowthRate: (snap as FullDealSnapshotV1).assumptions?.annual_appreciation ?? 0.03,
+      annualGrowthRate:
+        (snap as FullDealSnapshotV1).assumptions?.annual_appreciation ?? 0.03,
     };
   }
-  return { homeValue: 500000, initialBuyAmount: 100000, termYears: 5, annualGrowthRate: 0.03 };
+  return {
+    homeValue: 500000,
+    initialBuyAmount: 100000,
+    termYears: 5,
+    annualGrowthRate: 0.03,
+  };
 }
 
 function buildBasicResults(snap: WidgetSnapshot): Record<string, unknown> {
@@ -214,7 +257,9 @@ export function CalculatorEmbed({
 
   const handleDraftSnapshot = useCallback((snapshot: WidgetSnapshot) => {
     console.log("[widget] snapshot emitted", {
-      type: isFullDealSnapshot(snapshot) ? "FullDealSnapshotV1" : "DraftSnapshot",
+      type: isFullDealSnapshot(snapshot)
+        ? "FullDealSnapshotV1"
+        : "DraftSnapshot",
       hasInputs: "inputs" in snapshot,
       hasDealTerms: "deal_terms" in snapshot,
     });
@@ -266,10 +311,10 @@ export function CalculatorEmbed({
       const now = new Date().toISOString();
 
       const draftSnapshotForLead: Record<string, unknown> = {
-        contract_version: "10.1.0",
-        schema_version: "1",
-        engine_version: "10.1.0",
-        compute_version: "10.1.0",
+        contract_version: CONTRACT_VERSION,
+        schema_version: SCHEMA_VERSION,
+        engine_version: ENGINE_VERSION,
+        compute_version: COMPUTE_VERSION,
         email,
         persona,
         mode: "marketing",
@@ -286,11 +331,20 @@ export function CalculatorEmbed({
       }
 
       const mapped = mapWidgetInputsToCanonical(
-        inputs as { homeValue: number; initialBuyAmount: number; termYears: number; annualGrowthRate: number },
+        inputs as {
+          homeValue: number;
+          initialBuyAmount: number;
+          termYears: number;
+          annualGrowthRate: number;
+        },
       );
 
       if (!mapped.ok) {
-        console.warn("[canonical-mapper] mapping note:", mapped.field, mapped.message);
+        console.warn(
+          "[canonical-mapper] mapping note:",
+          mapped.field,
+          mapped.message,
+        );
       }
 
       try {
@@ -309,9 +363,13 @@ export function CalculatorEmbed({
 
         if (data.resume_token || data.token) {
           const token = data.resume_token || data.token;
-          console.log("[save-continue] success: token received", { persona, email });
+          console.log("[save-continue] success: token received", {
+            persona,
+            email,
+          });
 
-          const rawResumeUrl = typeof data.resumeUrl === "string" ? data.resumeUrl : "";
+          const rawResumeUrl =
+            typeof data.resumeUrl === "string" ? data.resumeUrl : "";
           const continueUrl = rawResumeUrl.startsWith("http")
             ? rawResumeUrl
             : rawResumeUrl.startsWith("/")
@@ -319,14 +377,22 @@ export function CalculatorEmbed({
               : `${appBase}/resume?token=${encodeURIComponent(String(token))}`;
 
           if (process.env.NODE_ENV !== "production") {
-            console.log("[save-continue] navigation", { appBase, token, continueUrl });
+            console.log("[save-continue] navigation", {
+              appBase,
+              token,
+              continueUrl,
+            });
           }
 
           window.location.assign(continueUrl);
           return;
         }
 
-        console.warn("[save-continue] failure:", data.error || "unknown error", { persona, email });
+        console.warn(
+          "[save-continue] failure:",
+          data.error || "unknown error",
+          { persona, email },
+        );
         setGate({
           step: "save_error",
           message: data.error || "Something went wrong. Please try again.",
@@ -337,7 +403,8 @@ export function CalculatorEmbed({
         console.error("[save-continue] network error:", err);
         setGate({
           step: "save_error",
-          message: "Network error. Please check your connection and try again.",
+          message:
+            "Network error. Please check your connection and try again.",
           snapshot: gate.snapshot,
           email: emailInput.trim(),
         });
@@ -349,12 +416,17 @@ export function CalculatorEmbed({
   const handleShareSubmit = useCallback(
     async (e: FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      if (gate.step !== "share_gate") return;
 
       const email = emailInput.trim();
       if (!email || !email.includes("@")) return;
 
-      setGate({ step: "share_submitting", summary: gate.summary, email });
+      if (gate.step !== "share_gate") return;
+
+      setGate({
+        step: "share_submitting",
+        summary: gate.summary,
+        email,
+      });
       trackCustomEvent("share_clicked", { persona });
 
       try {
@@ -370,10 +442,14 @@ export function CalculatorEmbed({
         const data = await res.json();
 
         if (data.share_token || data.ok) {
-          console.log("[share] success: share_token received", { to_email: email });
+          console.log("[share] success: share_token received", {
+            to_email: email,
+          });
           setGate({ step: "share_done" });
         } else {
-          console.warn("[share] failure:", data.error || "unknown error", { to_email: email });
+          console.warn("[share] failure:", data.error || "unknown error", {
+            to_email: email,
+          });
           setGate({
             step: "share_error",
             message: data.error || "Something went wrong. Please try again.",
@@ -440,17 +516,23 @@ export function CalculatorEmbed({
         </WidgetErrorBoundary>
       </div>
 
-      <Dialog open={isSaveModalOpen} onOpenChange={(open) => { if (!open) closeModal(); }}>
+      <Dialog
+        open={isSaveModalOpen}
+        onOpenChange={(open) => {
+          if (!open) closeModal();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Save Your Scenario</DialogTitle>
             <DialogDescription>
               Enter your email to save this scenario and continue in the app.
-              This is for scenario modeling purposes only and does not constitute financial advice.
+              This is for scenario modeling purposes only and does not
+              constitute financial advice.
             </DialogDescription>
           </DialogHeader>
 
-          {gate.step === "save_gate" && (
+          {(gate.step === "save_gate" || gate.step === "save_submitting") && (
             <form onSubmit={handleSaveSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="gate-email">Email</Label>
@@ -463,27 +545,53 @@ export function CalculatorEmbed({
                   onChange={(e) => setEmailInput(e.target.value)}
                   required
                   autoFocus
+                  disabled={gate.step === "save_submitting"}
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Save &amp; Continue
-              </Button>
               <Button
-                type="button"
-                variant="ghost"
+                type="submit"
                 className="w-full"
-                onClick={closeModal}
+                disabled={gate.step === "save_submitting"}
               >
-                Cancel
+                {gate.step === "save_submitting" ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg
+                      className="h-4 w-4 animate-spin"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                    Saving...
+                  </span>
+                ) : (
+                  "Save & Continue"
+                )}
               </Button>
+              {gate.step === "save_gate" && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={closeModal}
+                >
+                  Cancel
+                </Button>
+              )}
             </form>
-          )}
-
-          {gate.step === "save_submitting" && (
-            <div className="flex items-center justify-center gap-3 py-6">
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <p className="text-sm text-muted-foreground">Saving your scenario...</p>
-            </div>
           )}
 
           {gate.step === "save_error" && (
@@ -493,7 +601,9 @@ export function CalculatorEmbed({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setGate({ step: "save_gate", snapshot: gate.snapshot })}
+                  onClick={() =>
+                    setGate({ step: "save_gate", snapshot: gate.snapshot })
+                  }
                 >
                   Try Again
                 </Button>
@@ -506,13 +616,18 @@ export function CalculatorEmbed({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isShareModalOpen} onOpenChange={(open) => { if (!open) closeModal(); }}>
+      <Dialog
+        open={isShareModalOpen}
+        onOpenChange={(open) => {
+          if (!open) closeModal();
+        }}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Share This Scenario</DialogTitle>
             <DialogDescription>
-              Send an illustrative scenario summary to someone. This is non-binding
-              and for informational purposes only.
+              Send an illustrative scenario summary to someone. This is
+              non-binding and for informational purposes only.
             </DialogDescription>
           </DialogHeader>
 
@@ -548,7 +663,9 @@ export function CalculatorEmbed({
           {gate.step === "share_submitting" && (
             <div className="flex items-center justify-center gap-3 py-6">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <p className="text-sm text-muted-foreground">Sharing your scenario...</p>
+              <p className="text-sm text-muted-foreground">
+                Sharing your scenario...
+              </p>
             </div>
           )}
 
@@ -559,7 +676,9 @@ export function CalculatorEmbed({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setGate({ step: "share_gate", summary: gate.summary })}
+                  onClick={() =>
+                    setGate({ step: "share_gate", summary: gate.summary })
+                  }
                 >
                   Try Again
                 </Button>
@@ -572,7 +691,12 @@ export function CalculatorEmbed({
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isDoneModalOpen} onOpenChange={(open) => { if (!open) closeModal(); }}>
+      <Dialog
+        open={isDoneModalOpen}
+        onOpenChange={(open) => {
+          if (!open) closeModal();
+        }}
+      >
         <DialogContent>
           {gate.step === "save_done" && (
             <div className="py-4 text-center">
@@ -603,7 +727,10 @@ export function CalculatorEmbed({
 type ErrorBoundaryProps = { children: ReactNode; onError: () => void };
 type ErrorBoundaryState = { hasError: boolean };
 
-class WidgetErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class WidgetErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };

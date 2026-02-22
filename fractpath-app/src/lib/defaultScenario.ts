@@ -58,7 +58,6 @@ export function getDefaultScenario(): ScenarioAssumptions {
   };
 }
 
-
 export function getDefaultDealTerms(): DealTerms {
   // Important constraint: property_value must be > 0 for canonical compute (division in vesting).
   // Keep monthly_payment / number_of_payments at 0 by default to avoid accidental “payment-plan” dynamics.
@@ -84,6 +83,11 @@ export function getDefaultDealTerms(): DealTerms {
     platform_fee: 0,
     servicing_fee_monthly: 0,
     exit_fee_pct: 0,
+
+    // Realtor fields (widget expects these to exist)
+    realtor_representation_mode: "NONE",
+    realtor_commission_pct: 0.0,
+    realtor_commission_payment_mode: "AT_SALE",
 
     // Optional v10 DYF fields (explicitly set for stable JSON + clear intent)
     duration_yield_floor_enabled: false,
@@ -210,8 +214,27 @@ export function ensureScenario(inputs: unknown): CanonicalInputs {
     pickNumber(dtSrc, "servicing_fee_monthly") ??
     defaults.deal_terms.servicing_fee_monthly;
 
-  const exit_fee_pct =
-    pickNumber(dtSrc, "exit_fee_pct") ?? defaults.deal_terms.exit_fee_pct;
+  const realtor_representation_modeRaw =
+    pickString(dtSrc, "realtor_representation_mode") ??
+    defaults.deal_terms.realtor_representation_mode;
+
+  const realtor_representation_mode: DealTerms["realtor_representation_mode"] =
+    realtor_representation_modeRaw === "NONE"
+      ? "NONE"
+      : ("NONE" as DealTerms["realtor_representation_mode"]);
+
+  const realtor_commission_pct =
+    pickNumber(dtSrc, "realtor_commission_pct") ??
+    defaults.deal_terms.realtor_commission_pct;
+
+  const realtor_commission_payment_modeRaw =
+    pickString(dtSrc, "realtor_commission_payment_mode") ??
+    defaults.deal_terms.realtor_commission_payment_mode;
+
+  const realtor_commission_payment_mode: DealTerms["realtor_commission_payment_mode"] =
+    realtor_commission_payment_modeRaw === "AT_SALE"
+      ? "AT_SALE"
+      : ("AT_SALE" as DealTerms["realtor_commission_payment_mode"]);
 
   const duration_yield_floor_enabled = (toBool(
     dtSrc.duration_yield_floor_enabled,
@@ -249,6 +272,11 @@ export function ensureScenario(inputs: unknown): CanonicalInputs {
     platform_fee,
     servicing_fee_monthly,
     exit_fee_pct,
+
+    realtor_representation_mode,
+    realtor_commission_pct,
+    realtor_commission_payment_mode,
+
     duration_yield_floor_enabled,
     duration_yield_floor_start_year,
     duration_yield_floor_min_multiple,
@@ -286,7 +314,7 @@ export function ensureScenario(inputs: unknown): CanonicalInputs {
     annual_appreciation,
     closing_cost_pct,
     exit_year,
-    fmv_override: (fmv_override ?? undefined),
+    fmv_override: fmv_override ?? undefined,
   };
 
   return { deal_terms, scenario };

@@ -414,7 +414,14 @@ function qt({ series: t, width: e = 640, height: n = 240 }) {
   );
 }
 function T(t) {
-  return t.toLocaleString("en-US", {
+    function S(t) {
+      const n = typeof t === "number" ? t : Number(t);
+      if (!Number.isFinite(n)) return "—";
+      return "$" + n.toLocaleString("en-US", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      });
+    }
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0

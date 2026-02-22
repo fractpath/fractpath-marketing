@@ -314,7 +314,7 @@ export async function POST(request: NextRequest) {
 
     let parsed: unknown = null;
     try {
-      parsed = raw ? JSON.parse(raw) : null;
+        parsed = raw ? JSON.parse(raw) : null;
       } catch {
         parsed = null;
       }

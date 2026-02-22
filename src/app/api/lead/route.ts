@@ -315,20 +315,25 @@ export async function POST(request: NextRequest) {
     let parsed: unknown = null;
     try {
       parsed = raw ? JSON.parse(raw) : null;
-    } catch {
-      parsed = null;
-    }
+      } catch {
+        parsed = null;
+      }
+
+      const obj: Record<string, unknown> | null =
+        parsed && typeof parsed === "object" && !Array.isArray(parsed)
+          ? (parsed as Record<string, unknown>)
+          : null;
 
     if (mintRes.ok) {
-      token = parsed?.token ?? parsed?.resume_token ?? null;
-      if (token && typeof token === "string") {
-        remoteMintOk = true;
-        remoteResumeUrl =
-          typeof parsed?.resumeUrl === "string"
-            ? parsed.resumeUrl
-            : `${FRACTPATH_APP_URL}/resume?token=${token}`;
+        const tok = obj?.token ?? obj?.resume_token ?? null;
+        token = typeof tok === "string" ? tok : null;
+        if (token) {
+          remoteMintOk = true;
+          const ru = obj?.resumeUrl;
+          remoteResumeUrl =
+            typeof ru === "string" ? ru : `/resume?token=`;
+        }
       }
-    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.warn("[lead] remote mint failed:", msg);

@@ -313,7 +313,7 @@ export async function POST(request: NextRequest) {
     mintBody = raw.slice(0, 4000);
 
     let parsed: unknown = null;
-    try {
+      try {
         parsed = raw ? JSON.parse(raw) : null;
       } catch {
         parsed = null;

@@ -138,7 +138,8 @@ async function localMint(
         ? (err as { code?: unknown }).code
         : undefined;
       if (code === "23505" && attempt < maxAttempts) continue;
-      console.error("[local-mint] insert error:", err?.message ?? err);
+      const msg = err instanceof Error ? err.message : String(err);
+        console.error("[local-mint] insert error:", msg);
       return { ok: false, error: "local_mint_failed" };
     }
   }

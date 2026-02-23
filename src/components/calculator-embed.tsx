@@ -264,7 +264,11 @@ export function CalculatorEmbed({
       hasDealTerms: "deal_terms" in snapshot,
     });
 
-    const w = window as any;
+    const w = window as Window & {
+
+      __fractpath_saveSnapshot?: (snapshot: WidgetSnapshot) => void;
+
+    };
     if (typeof w.__fractpath_saveSnapshot === "function") {
       w.__fractpath_saveSnapshot(snapshot);
     }

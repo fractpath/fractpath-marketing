@@ -263,6 +263,12 @@ export function CalculatorEmbed({
       hasInputs: "inputs" in snapshot,
       hasDealTerms: "deal_terms" in snapshot,
     });
+
+    const w = window as any;
+    if (typeof w.__fractpath_saveSnapshot === "function") {
+      w.__fractpath_saveSnapshot(snapshot);
+    }
+    
     setGate({ step: "save_gate", snapshot });
     setEmailInput("");
   }, []);

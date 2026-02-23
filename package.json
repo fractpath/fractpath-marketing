@@ -13,7 +13,7 @@
     "@types/pg": "^8.16.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "fractpath-calculator-widget": "git+https://github.com/fractpath/fractpath-calculator-widget.git#v1.0.3",
+    "fractpath-calculator-widget": "https://github.com/fractpath/fractpath-calculator-widget/archive/refs/tags/v1.0.3.tar.gz",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
     "next-themes": "^0.4.6",

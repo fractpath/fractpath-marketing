@@ -265,9 +265,7 @@ export function CalculatorEmbed({
     });
 
     const w = window as Window & {
-
       __fractpath_saveSnapshot?: (snapshot: WidgetSnapshot) => void;
-
     };
     if (typeof w.__fractpath_saveSnapshot === "function") {
       w.__fractpath_saveSnapshot(snapshot);

@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getAppBaseUrlClient } from "@/lib/appBaseUrl";
+import { getSupabaseClient } from "@/lib/supabaseClient";
 
 const VALID_PERSONAS = ["homeowner", "buyer", "realtor"] as const;
 type Persona = (typeof VALID_PERSONAS)[number];
@@ -79,13 +80,13 @@ export function RegistrationGateModal({
   }, []);
 
   useEffect(() => {
-    if (open) {
-      setError(null);
-      setSignupDone(false);
-      setVerificationStateId(null);
-      setVerificationExpired(false);
-      stopPolling();
-      requestAnimationFrame(() => emailRef.current?.focus());
+  if (open) {
+    setError(null);
+    setSignupDone(false);
+    setVerificationStateId(null);
+    setVerificationExpired(false);
+    stopPolling();
+    requestAnimationFrame(() => emailRef.current?.focus());
     } else {
       stopPolling();
     }
@@ -163,38 +164,38 @@ export function RegistrationGateModal({
     setSubmitting(true);
     setError(null);
 
+  try {
+    const callbackNext = resumeUrl.startsWith("/")
+      ? resumeUrl
+      : `/resume?token=${resumeUrl}`;
+
+    let stateId: string | null = null;
     try {
-      const callbackNext = resumeUrl.startsWith("/")
-        ? resumeUrl
-        : `/resume?token=${resumeUrl}`;
-
-      let stateId: string | null = null;
-      try {
-        const vsRes = await fetch("/api/verification-state", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: trimEmail,
-            resumeUrl: callbackNext,
-            persona,
-          }),
-        });
-        if (vsRes.ok) {
-          const vsData = await vsRes.json();
-          stateId = vsData.id || null;
-        }
-      } catch {
-        // verification state creation failed — continue without polling
+      const vsRes = await fetch("/api/verification-state", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: trimEmail,
+          resumeUrl: callbackNext,
+          persona,
+        }),
+      });
+      if (vsRes.ok) {
+        const vsData = await vsRes.json();
+        stateId = vsData.id || null;
       }
+    } catch {
+      // verification state creation failed — continue without polling
+    }
 
-      let emailRedirectTo = `${APP}/auth/finish?next=${encodeURIComponent(callbackNext)}`;
-      if (stateId) {
-        emailRedirectTo += `&verify_state=${encodeURIComponent(stateId)}`;
-      }
+    let emailRedirectTo = `${APP}/auth/finish?next=${encodeURIComponent(callbackNext)}`;
+    if (stateId) {
+      emailRedirectTo += `&verify_state=${encodeURIComponent(stateId)}`;
+    }
 
-      const targetUrl =
-        `${APP}/signup?returnTo=${encodeURIComponent(resumeUrl)}` +
-        `&persona=${encodeURIComponent(persona)}`;
+    const targetUrl =
+      `${APP}/signup?returnTo=${encodeURIComponent(resumeUrl)}` +
+      `&persona=${encodeURIComponent(persona)}`;
 
       try {
         localStorage.setItem(
@@ -205,32 +206,24 @@ export function RegistrationGateModal({
         // localStorage unavailable
       }
 
-      setSignupDone(true);
-      setSubmitting(false);
+  setSignupDone(true);
+  setSubmitting(false);
 
-      if (stateId) {
-        setVerificationStateId(stateId);
-        startPolling(stateId, callbackNext);
-      }
+  if (stateId) {
+    setVerificationStateId(stateId);
+    startPolling(stateId, callbackNext);
+  }
 
-      window.location.assign(targetUrl);
-      return;
-    } catch (err) {
-      const msg =
-        err instanceof Error ? err.message : "Signup failed. Please try again.";
-      setError(msg);
-      setSubmitting(false);
-    }
+  window.location.assign(targetUrl);
+  return;
+  } catch (err) {
+  const msg =
+    err instanceof Error ? err.message : "Signup failed. Please try again.";
+  setError(msg);
+  setSubmitting(false);
+  }
   };
-
-  const handleTryAgain = () => {
-    stopPolling();
-    setSignupDone(false);
-    setVerificationStateId(null);
-    setVerificationExpired(false);
-    setError(null);
-    setEmail("");
-    setPassword("");
+>>>>>>> 0c26c1f (Add direct signup to marketing site via Supabase)
   };
 
   const selectedPersona = VALID_PERSONAS.includes(persona as Persona)
@@ -251,6 +244,7 @@ export function RegistrationGateModal({
             className="mb-2"
           />
 <<<<<<< HEAD
+<<<<<<< HEAD
           {signupDone ? (
             <>
               <DialogTitle className="text-xl">Verify your email</DialogTitle>
@@ -258,11 +252,21 @@ export function RegistrationGateModal({
                 We sent a confirmation link to <strong>{email.trim()}</strong>.
                 Open that link to finish creating your account and continue to
                 your draft in FractPath.
+=======
+          {signupDone ? (
+            <>
+              <DialogTitle className="text-xl">Check your email</DialogTitle>
+              <p className="text-sm text-muted-foreground">
+                We sent a confirmation link to <strong>{email.trim()}</strong>.
+                Click the link in your email to verify your account and continue
+                to your saved scenario.
+>>>>>>> 0c26c1f (Add direct signup to marketing site via Supabase)
               </p>
             </>
           ) : (
             <>
               <DialogTitle className="text-xl">Create your account</DialogTitle>
+<<<<<<< HEAD
               <p className="text-sm text-muted-foreground">{helperText}</p>
             </>
           )}
@@ -328,26 +332,59 @@ export function RegistrationGateModal({
 
         {tokenError && (
 >>>>>>> 7290508 (Update calculator to mint draft tokens before user registration)
+=======
+              <p className="text-sm text-muted-foreground">
+                {helperText}
+              </p>
+            </>
+          )}
+        </DialogHeader>
+
+        {signupDone && (
+          <div className="space-y-4 py-2">
+            <div className="rounded-lg border border-green-200 bg-green-50 px-4 py-3 dark:border-green-800 dark:bg-green-950">
+              <p className="text-sm text-green-800 dark:text-green-200">
+                Your scenario has been saved. After confirming your email,
+                you&apos;ll be taken directly to your draft in the app.
+              </p>
+            </div>
+            <p className="text-center text-xs text-muted-foreground">
+              Didn&apos;t receive the email? Check your spam folder or close this
+              dialog and try again.
+            </p>
+          </div>
+        )}
+
+        {!signupDone && tokenError && (
+>>>>>>> 0c26c1f (Add direct signup to marketing site via Supabase)
           <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2">
             <p className="text-sm text-destructive">{tokenError}</p>
           </div>
         )}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         {!signupDone && error && (
 =======
         {error && (
 >>>>>>> 7290508 (Update calculator to mint draft tokens before user registration)
+=======
+        {!signupDone && error && (
+>>>>>>> 0c26c1f (Add direct signup to marketing site via Supabase)
           <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2">
             <p className="text-sm text-destructive">{error}</p>
           </div>
         )}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         {!signupDone && minting && (
 =======
         {minting && (
 >>>>>>> 7290508 (Update calculator to mint draft tokens before user registration)
+=======
+        {!signupDone && minting && (
+>>>>>>> 0c26c1f (Add direct signup to marketing site via Supabase)
           <div className="flex items-center justify-center gap-3 py-4">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <p className="text-sm text-muted-foreground">
@@ -357,10 +394,14 @@ export function RegistrationGateModal({
         )}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         {!signupDone && !minting && (
 =======
         {!minting && (
 >>>>>>> 7290508 (Update calculator to mint draft tokens before user registration)
+=======
+        {!signupDone && !minting && (
+>>>>>>> 0c26c1f (Add direct signup to marketing site via Supabase)
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="reg-email">Email</Label>
@@ -450,7 +491,7 @@ export function RegistrationGateModal({
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  Redirecting...
+                  Creating account...
                 </span>
               ) : (
                 "Create account"
@@ -460,6 +501,7 @@ export function RegistrationGateModal({
         )}
 >>>>>>> 7290508 (Update calculator to mint draft tokens before user registration)
 
+<<<<<<< HEAD
             <Button
               type="submit"
               className="w-full"
@@ -496,12 +538,18 @@ export function RegistrationGateModal({
           </form>
         )}
 
+=======
+>>>>>>> 0c26c1f (Add direct signup to marketing site via Supabase)
         {!signupDone && (
           <div className="space-y-2 text-center">
             <p className="text-xs text-muted-foreground">
               Already have an account?{" "}
               <a
+<<<<<<< HEAD
                 href={`${APP}/login?returnTo=${encodeURIComponent(resumeUrl || "/")}`}
+=======
+                href={`${APP}/login?returnTo=${encodeURIComponent(resumeUrl || "/dashboard")}`}
+>>>>>>> 0c26c1f (Add direct signup to marketing site via Supabase)
                 className="font-medium text-foreground underline-offset-4 hover:underline"
               >
                 Log in

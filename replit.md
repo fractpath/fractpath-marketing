@@ -18,7 +18,7 @@ The site is built with Next.js 16 (App Router) and TypeScript, utilizing Tailwin
 **Key Features and Design Patterns:**
 - **Persona-Based Content System:** `src/content/personas.ts` defines persona-specific copy for homeowners, buyers, and realtors. Static hero, value propositions, and trust sections are server-rendered, while the calculator area (tabs + widget embed) is a client component (`PersonaPageContent`) that updates based on persona selection.
 - **Widget Integration:** The `fractpath-calculator-widget` is integrated via git tag. The marketing site provides the UI for persona selection, registration gating, and sharing, while the widget handles the complex calculations and state management.
-- **Registration Gate (token-based):** Calculator CTAs (Save & Continue, Share) first mint a server-side draft token via `POST /api/draft`, then open the registration modal with the token's `resumeUrl`. Modal redirects to app signup with `returnTo=/resume?token=<TOKEN>`. localStorage is retained as non-authoritative backup only.
+- **Registration Gate (token-based):** Calculator CTAs (Save & Continue, Share) first mint a server-side draft token via `POST /api/draft`, then open the registration modal with the token's `resumeUrl`. Modal performs real Supabase signup directly (shared auth project with app), then shows "check your email" confirmation. The email confirmation link routes through `${APP}/auth/callback?next=/resume?token=<TOKEN>`, establishing the user's session on the app origin and landing them directly in the restored draft. localStorage is retained as non-authoritative backup only.
 - **API Endpoints:**
     - `POST /api/draft`: Mints a draft token from a canonical snapshot without requiring email. Uses remote mint (FRACTPATH_APP_URL/api/draft-tokens/mint) with local PostgreSQL fallback. Returns `{ok, token, resumeUrl}`. No HubSpot upsert.
     - `POST /api/lead`: Handles lead generation by receiving user email, persona, and a draft snapshot. Performs server-to-server minting with the main FractPath app or falls back to a local PostgreSQL store. Integrates with HubSpot for CRM upserts.
@@ -30,6 +30,7 @@ The site is built with Next.js 16 (App Router) and TypeScript, utilizing Tailwin
 
 ## External Dependencies
 - **fractpath-calculator-widget:** The core calculator widget, integrated via git tag.
+- **Supabase Auth:** Shared auth project with the main app (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`). Used for direct in-modal signup via `@supabase/supabase-js`. Sessions are NOT persisted on marketing origin — authentication is established on the app domain via the email confirmation callback flow.
 - **HubSpot:** Used for CRM integration to upsert lead information (`HUBSPOT_ACCESS_TOKEN`).
 - **Amazon SES (Simple Email Service):** Employed for sending branded share emails (`SES_FROM`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
 - **FractPath Main Application:** Interacted with via `FRACTPATH_APP_URL` for server-to-server minting of draft tokens and `NEXT_PUBLIC_FRACTPATH_APP_URL` for client-side navigation.

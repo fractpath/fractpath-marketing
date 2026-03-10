@@ -284,8 +284,9 @@ describe("Registration gate modal — token-based redirect", () => {
     expect(MODAL_SRC).toContain("minting");
   });
 
-  it("uses resumeUrl to build returnTo param, not hardcoded /dashboard", () => {
-    expect(MODAL_SRC).toContain("returnTo");
+  it("uses resumeUrl to build emailRedirectTo for Supabase signup, not hardcoded /dashboard", () => {
+    expect(MODAL_SRC).toContain("emailRedirectTo");
+    expect(MODAL_SRC).toContain("resumeUrl");
     expect(MODAL_SRC).not.toContain('"/dashboard"');
   });
 
@@ -299,6 +300,65 @@ describe("Registration gate modal — token-based redirect", () => {
 
   it("disables submit when resumeUrl is not available", () => {
     expect(MODAL_SRC).toContain("!resumeUrl");
+  });
+});
+
+describe("Registration gate modal — direct Supabase signup", () => {
+  const MODAL_PATH = path.resolve("src/components/registration-gate-modal.tsx");
+  const MODAL_SRC = fs.readFileSync(MODAL_PATH, "utf-8");
+
+  it("imports and uses Supabase client", () => {
+    expect(MODAL_SRC).toContain("getSupabaseClient");
+    expect(MODAL_SRC).toContain("supabase.auth.signUp");
+  });
+
+  it("does NOT redirect to app signup page", () => {
+    expect(MODAL_SRC).not.toContain("/signup?");
+    expect(MODAL_SRC).not.toContain("window.location.assign");
+  });
+
+  it("passes role and source metadata matching app semantics", () => {
+    expect(MODAL_SRC).toContain("role: persona");
+    expect(MODAL_SRC).toContain('source: "marketing"');
+  });
+
+  it("sets emailRedirectTo pointing to app auth callback with next param", () => {
+    expect(MODAL_SRC).toContain("/auth/callback");
+    expect(MODAL_SRC).toContain("emailRedirectTo");
+    expect(MODAL_SRC).toContain("next=");
+  });
+
+  it("shows email confirmation state after successful signup", () => {
+    expect(MODAL_SRC).toContain("signupDone");
+    expect(MODAL_SRC).toContain("Check your email");
+    expect(MODAL_SRC).toContain("confirmation link");
+  });
+
+  it("handles signup errors inline", () => {
+    expect(MODAL_SRC).toContain("signUpError");
+    expect(MODAL_SRC).toContain("setError");
+  });
+
+  it("login link includes returnTo with resumeUrl", () => {
+    expect(MODAL_SRC).toContain("/login?returnTo=");
+  });
+});
+
+describe("Supabase client utility", () => {
+  const CLIENT_PATH = path.resolve("src/lib/supabaseClient.ts");
+  const CLIENT_SRC = fs.readFileSync(CLIENT_PATH, "utf-8");
+
+  it("exists and exports getSupabaseClient", () => {
+    expect(CLIENT_SRC).toContain("export function getSupabaseClient");
+  });
+
+  it("uses NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY", () => {
+    expect(CLIENT_SRC).toContain("NEXT_PUBLIC_SUPABASE_URL");
+    expect(CLIENT_SRC).toContain("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  });
+
+  it("does not persist sessions on marketing origin", () => {
+    expect(CLIENT_SRC).toContain("persistSession: false");
   });
 });
 

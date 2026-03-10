@@ -6,51 +6,52 @@ const EMBED_PATH = path.resolve("src/components/calculator-embed.tsx");
 const EMBED_SRC = fs.readFileSync(EMBED_PATH, "utf-8");
 
 describe("FullDealSnapshotV1 canonical compliance", () => {
-  it("always emits contract_version 10.2.0", () => {
-    const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
+  it("always emits contract_version 10.2.0 in draft payload builder", () => {
+    const idx = EMBED_SRC.indexOf("const buildDraftPayload");
+    expect(idx).toBeGreaterThan(-1);
     const block = EMBED_SRC.slice(idx, idx + 600);
     expect(block).toMatch(/contract_version:\s*(CONTRACT_VERSION|"10\.2\.0")/);
   });
 
-  it("always emits schema_version as string '1'", () => {
-    const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
+  it("always emits schema_version in draft payload builder", () => {
+    const idx = EMBED_SRC.indexOf("const buildDraftPayload");
     const block = EMBED_SRC.slice(idx, idx + 600);
     expect(block).toMatch(/schema_version:\s*(SCHEMA_VERSION|"1")/);
   });
 
-  it("always emits engine_version 10.2.0", () => {
-    const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
+  it("always emits engine_version in draft payload builder", () => {
+    const idx = EMBED_SRC.indexOf("const buildDraftPayload");
     const block = EMBED_SRC.slice(idx, idx + 600);
     expect(block).toMatch(/engine_version:\s*(ENGINE_VERSION|"10\.2\.0")/);
   });
 
-  it("always emits compute_version 10.2.0", () => {
-    const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
+  it("always emits compute_version in draft payload builder", () => {
+    const idx = EMBED_SRC.indexOf("const buildDraftPayload");
     const block = EMBED_SRC.slice(idx, idx + 600);
     expect(block).toMatch(/compute_version:\s*(COMPUTE_VERSION|"10\.2\.0")/);
   });
 
-  it("includes deal_terms in snapshot", () => {
-    const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
-    const block = EMBED_SRC.slice(idx, idx + 600);
+  it("includes deal_terms in draft payload", () => {
+    const idx = EMBED_SRC.indexOf("const buildDraftPayload");
+    const block = EMBED_SRC.slice(idx, idx + 900);
     expect(block).toContain("deal_terms: dealTerms");
   });
 
-  it("includes assumptions (scenario) in snapshot", () => {
-    const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
-    const block = EMBED_SRC.slice(idx, idx + 600);
+  it("includes assumptions (scenario) in draft payload", () => {
+    const idx = EMBED_SRC.indexOf("const buildDraftPayload");
+    const block = EMBED_SRC.slice(idx, idx + 900);
     expect(block).toContain("assumptions: scenario");
   });
 
-  it("includes computed_at timestamp in snapshot", () => {
-    const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
-    const block = EMBED_SRC.slice(idx, idx + 600);
+  it("includes computed_at timestamp in draft payload", () => {
+    const idx = EMBED_SRC.indexOf("const buildDraftPayload");
+    const block = EMBED_SRC.slice(idx, idx + 900);
     expect(block).toContain("computed_at:");
   });
 
-  it("includes mode: marketing in snapshot", () => {
-    const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
-    const block = EMBED_SRC.slice(idx, idx + 600);
+  it("includes mode: marketing in draft payload", () => {
+    const idx = EMBED_SRC.indexOf("const buildDraftPayload");
+    const block = EMBED_SRC.slice(idx, idx + 900);
     expect(block).toContain('mode: "marketing"');
   });
 
@@ -88,7 +89,8 @@ describe("FullDealSnapshotV1 canonical compliance", () => {
   });
 
   it("never emits legacy DraftSnapshot shape without canonical fields", () => {
-    const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
+    const idx = EMBED_SRC.indexOf("const buildDraftPayload");
+    expect(idx).toBeGreaterThan(-1);
     const block = EMBED_SRC.slice(idx, idx + 800);
     expect(block).toContain("deal_terms");
     expect(block).toContain("assumptions");
@@ -97,24 +99,43 @@ describe("FullDealSnapshotV1 canonical compliance", () => {
   });
 });
 
-describe("Save & Continue — snapshot injection", () => {
-  it("injects email into draftSnapshot object", () => {
-    const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
-    const block = EMBED_SRC.slice(idx, idx + 600);
-    expect(block).toContain("email");
-  });
-
-  it("injects persona into draftSnapshot object", () => {
-    const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
-    const block = EMBED_SRC.slice(idx, idx + 600);
+describe("Save & Continue — token-based draft flow", () => {
+  it("calls /api/draft to mint token before opening modal", () => {
+    expect(EMBED_SRC).toContain('fetch("/api/draft"');
+    const mintIdx = EMBED_SRC.indexOf("const mintDraftToken");
+    expect(mintIdx).toBeGreaterThan(-1);
+    const block = EMBED_SRC.slice(mintIdx, mintIdx + 500);
+    expect(block).toContain("/api/draft");
+    expect(block).toContain("draftSnapshot");
     expect(block).toContain("persona");
   });
 
-  it("injects created_at with fallback into draftSnapshot", () => {
-    const idx = EMBED_SRC.indexOf("const draftSnapshotForLead");
-    const block = EMBED_SRC.slice(idx, idx + 600);
-    expect(block).toContain("created_at");
-    expect(EMBED_SRC).toContain("new Date().toISOString()");
+  it("transitions to minting state before calling /api/draft", () => {
+    const handlerIdx = EMBED_SRC.indexOf("const handleDraftSnapshot");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const block = EMBED_SRC.slice(handlerIdx, handlerIdx + 1500);
+    expect(block).toContain('step: "minting"');
+    expect(block).toContain("mintDraftToken");
+  });
+
+  it("opens registration_gate with resumeUrl on successful mint", () => {
+    const handlerIdx = EMBED_SRC.indexOf("const handleDraftSnapshot");
+    const block = EMBED_SRC.slice(handlerIdx, handlerIdx + 1500);
+    expect(block).toContain('step: "registration_gate"');
+    expect(block).toContain("resumeUrl: result.resumeUrl");
+  });
+
+  it("shows mint_error state on token failure", () => {
+    const handlerIdx = EMBED_SRC.indexOf("const handleDraftSnapshot");
+    const block = EMBED_SRC.slice(handlerIdx, handlerIdx + 1500);
+    expect(block).toContain('step: "mint_error"');
+    expect(block).toContain("message: result.error");
+  });
+
+  it("includes persona in draft payload", () => {
+    const idx = EMBED_SRC.indexOf("const buildDraftPayload");
+    const block = EMBED_SRC.slice(idx, idx + 900);
+    expect(block).toContain("persona");
   });
 
   it("provides inputs using buildCanonicalInputs", () => {
@@ -131,14 +152,22 @@ describe("Save & Continue — snapshot injection", () => {
     expect(fn).toContain("return {}");
   });
 
-  it("sends draftSnapshot inside POST body (not just top-level fields)", () => {
-    const fetchSection = EMBED_SRC.slice(
-      EMBED_SRC.indexOf('fetch("/api/lead"'),
-      EMBED_SRC.indexOf("const data = await res.json()"),
-    );
-    expect(fetchSection).toContain("draftSnapshot: draftSnapshotForLead");
-    expect(fetchSection).toContain("email");
-    expect(fetchSection).toContain("persona");
+  it("also persists draft to localStorage as backup", () => {
+    const handlerIdx = EMBED_SRC.indexOf("const handleDraftSnapshot");
+    const block = EMBED_SRC.slice(handlerIdx, handlerIdx + 1500);
+    expect(block).toContain("persistDraftToStorage");
+  });
+});
+
+describe("Share flow — token-based draft flow", () => {
+  it("Share handler also mints a draft token", () => {
+    const handlerIdx = EMBED_SRC.indexOf("const handleShareSummary");
+    expect(handlerIdx).toBeGreaterThan(-1);
+    const block = EMBED_SRC.slice(handlerIdx, handlerIdx + 2000);
+    expect(block).toContain('step: "minting"');
+    expect(block).toContain("mintDraftToken");
+    expect(block).toContain('step: "registration_gate"');
+    expect(block).toContain("resumeUrl: result.resumeUrl");
   });
 });
 
@@ -208,17 +237,17 @@ describe("Save & Continue — event tracking preserved", () => {
 });
 
 describe("Save & Continue — resume navigation", () => {
-  it("navigates to resume URL on success", () => {
-    expect(EMBED_SRC).toContain("window.location.assign(continueUrl)");
-  });
-
-  it("constructs resume URL from appBase + token", () => {
-    expect(EMBED_SRC).toContain("appBase");
+  it("constructs resume URL from token", () => {
     expect(EMBED_SRC).toContain("/resume?token=");
   });
 
-  it("handles both resume_token and token response fields", () => {
+  it("handles both resume_token and token response fields (legacy save flow)", () => {
     expect(EMBED_SRC).toContain("data.resume_token || data.token");
+  });
+
+  it("registration modal receives resumeUrl prop", () => {
+    expect(EMBED_SRC).toContain("resumeUrl={");
+    expect(EMBED_SRC).toContain("gate.resumeUrl");
   });
 });
 
@@ -236,5 +265,126 @@ describe("Floor/ceiling defaults (not user-collected)", () => {
     const callBlock = EMBED_SRC.slice(callIdx, callIdx + 300);
     expect(callBlock).not.toContain("{ floor_multiple: floor");
     expect(callBlock).not.toContain("ceiling_multiple: ceiling");
+  });
+});
+
+describe("Registration gate modal — token-based redirect", () => {
+  const MODAL_PATH = path.resolve("src/components/registration-gate-modal.tsx");
+  const MODAL_SRC = fs.readFileSync(MODAL_PATH, "utf-8");
+
+  it("accepts resumeUrl prop", () => {
+    expect(MODAL_SRC).toContain("resumeUrl");
+  });
+
+  it("accepts tokenError prop", () => {
+    expect(MODAL_SRC).toContain("tokenError");
+  });
+
+  it("accepts minting prop", () => {
+    expect(MODAL_SRC).toContain("minting");
+  });
+
+  it("uses resumeUrl to build returnTo param, not hardcoded /dashboard", () => {
+    expect(MODAL_SRC).toContain("returnTo");
+    expect(MODAL_SRC).not.toContain('"/dashboard"');
+  });
+
+  it("shows flow-specific helper text for share", () => {
+    expect(MODAL_SRC).toContain("continue to your draft and share it securely");
+  });
+
+  it("shows flow-specific helper text for save", () => {
+    expect(MODAL_SRC).toContain("save this scenario and continue in FractPath");
+  });
+
+  it("disables submit when resumeUrl is not available", () => {
+    expect(MODAL_SRC).toContain("!resumeUrl");
+  });
+});
+
+describe("Realtor beta form — CRM only", () => {
+  const REALTOR_PATH = path.resolve("src/components/realtor-beta-form.tsx");
+  const REALTOR_SRC = fs.readFileSync(REALTOR_PATH, "utf-8");
+
+  it("posts to /api/realtor-interest, not /api/lead", () => {
+    expect(REALTOR_SRC).toContain("/api/realtor-interest");
+    expect(REALTOR_SRC).not.toContain("/api/lead");
+  });
+
+  it("does not send draftSnapshot", () => {
+    expect(REALTOR_SRC).not.toContain("draftSnapshot");
+    expect(REALTOR_SRC).not.toContain("contract_version");
+    expect(REALTOR_SRC).not.toContain("schema_version");
+  });
+
+  it("sends email, name, brokerage only", () => {
+    expect(REALTOR_SRC).toContain("email:");
+    expect(REALTOR_SRC).toContain("name:");
+    expect(REALTOR_SRC).toContain("brokerage:");
+  });
+});
+
+describe("/api/draft endpoint", () => {
+  const DRAFT_PATH = path.resolve("src/app/api/draft/route.ts");
+  const DRAFT_SRC = fs.readFileSync(DRAFT_PATH, "utf-8");
+
+  it("exists and exports POST handler", () => {
+    expect(DRAFT_SRC).toContain("export async function POST");
+  });
+
+  it("does not require email", () => {
+    expect(DRAFT_SRC).not.toContain('"Valid email required"');
+  });
+
+  it("requires persona", () => {
+    expect(DRAFT_SRC).toContain("Valid persona required");
+  });
+
+  it("validates contract_version 10.2.0", () => {
+    expect(DRAFT_SRC).toContain('"10.2.0"');
+  });
+
+  it("uses remote mint with local fallback", () => {
+    expect(DRAFT_SRC).toContain("/api/draft-tokens/mint");
+    expect(DRAFT_SRC).toContain("localMint");
+  });
+
+  it("returns ok, token, resumeUrl", () => {
+    expect(DRAFT_SRC).toContain("ok: true");
+    expect(DRAFT_SRC).toContain("token");
+    expect(DRAFT_SRC).toContain("resumeUrl");
+  });
+
+  it("does not do HubSpot upsert", () => {
+    expect(DRAFT_SRC).not.toContain("hubspot");
+    expect(DRAFT_SRC).not.toContain("HUBSPOT");
+  });
+});
+
+describe("/api/realtor-interest endpoint", () => {
+  const RI_PATH = path.resolve("src/app/api/realtor-interest/route.ts");
+  const RI_SRC = fs.readFileSync(RI_PATH, "utf-8");
+
+  it("exists and exports POST handler", () => {
+    expect(RI_SRC).toContain("export async function POST");
+  });
+
+  it("does not mint tokens", () => {
+    expect(RI_SRC).not.toContain("generateToken");
+    expect(RI_SRC).not.toContain("localMint");
+    expect(RI_SRC).not.toContain("draft-tokens/mint");
+  });
+
+  it("does not return resumeUrl", () => {
+    expect(RI_SRC).not.toContain("resumeUrl");
+  });
+
+  it("does HubSpot upsert for realtor", () => {
+    expect(RI_SRC).toContain("hubspot");
+    expect(RI_SRC).toContain("realtor");
+  });
+
+  it("returns simple success", () => {
+    expect(RI_SRC).toContain("ok: true");
   });
 });

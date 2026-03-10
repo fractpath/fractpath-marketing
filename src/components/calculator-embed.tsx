@@ -62,7 +62,9 @@ type WidgetSnapshot = DraftSnapshot | FullDealSnapshotV1;
 
 type GateState =
   | { step: "idle" }
-  | { step: "registration_gate"; pendingAction: "save" | "share"; snapshot?: WidgetSnapshot; summary?: ShareSummary }
+  | { step: "minting"; pendingAction: "save" | "share"; snapshot?: WidgetSnapshot; summary?: ShareSummary }
+  | { step: "registration_gate"; pendingAction: "save" | "share"; resumeUrl: string; snapshot?: WidgetSnapshot; summary?: ShareSummary }
+  | { step: "mint_error"; pendingAction: "save" | "share"; message: string; snapshot?: WidgetSnapshot; summary?: ShareSummary }
   | { step: "save_gate"; snapshot: WidgetSnapshot }
   | { step: "save_submitting"; snapshot: WidgetSnapshot; email: string }
   | { step: "save_done" }
@@ -285,7 +287,57 @@ export function CalculatorEmbed({
     }
   }, []);
 
-  const handleDraftSnapshot = useCallback((snapshot: WidgetSnapshot) => {
+  const buildDraftPayload = useCallback((snapshot: WidgetSnapshot): Record<string, unknown> => {
+    const dealTerms = buildCanonicalDealTerms(snapshot);
+    const scenario = buildCanonicalScenario(snapshot);
+    const inputs = buildCanonicalInputs(snapshot);
+    const basicResults = buildBasicResults(snapshot);
+    const now = new Date().toISOString();
+
+    return {
+      contract_version: CONTRACT_VERSION,
+      schema_version: SCHEMA_VERSION,
+      engine_version: ENGINE_VERSION,
+      compute_version: COMPUTE_VERSION,
+      mode: "marketing",
+      created_at: snapshot.created_at || now,
+      computed_at: now,
+      persona,
+      deal_terms: dealTerms,
+      assumptions: scenario,
+      inputs,
+      basic_results: basicResults,
+    };
+  }, [persona]);
+
+  const mintDraftToken = useCallback(async (
+    draftPayload: Record<string, unknown>,
+    canonicalInputs?: unknown,
+  ): Promise<{ ok: true; resumeUrl: string } | { ok: false; error: string }> => {
+    try {
+      const res = await fetch("/api/draft", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          persona,
+          draftSnapshot: draftPayload,
+          canonicalInputs,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok && (data.token || data.resumeUrl)) {
+        const resumeUrl = typeof data.resumeUrl === "string"
+          ? data.resumeUrl
+          : `/resume?token=${data.token}`;
+        return { ok: true, resumeUrl };
+      }
+      return { ok: false, error: data.error || "Could not save scenario. Please try again." };
+    } catch {
+      return { ok: false, error: "Network error. Please check your connection and try again." };
+    }
+  }, [persona]);
+
+  const handleDraftSnapshot = useCallback(async (snapshot: WidgetSnapshot) => {
     console.log("[widget] snapshot emitted", {
       type: isFullDealSnapshot(snapshot)
         ? "FullDealSnapshotV1"
@@ -307,19 +359,81 @@ export function CalculatorEmbed({
       localStorage.setItem("fractpath_pending_action", "save");
     } catch { /* noop */ }
 
-    setGate({ step: "registration_gate", pendingAction: "save", snapshot });
+    setGate({ step: "minting", pendingAction: "save", snapshot });
     setEmailInput("");
-  }, [persistDraftToStorage]);
 
-  const handleShareSummary = useCallback((summary: ShareSummary) => {
+    const draftPayload = buildDraftPayload(snapshot);
+
+    const inputs = buildCanonicalInputs(snapshot);
+    const mapped = mapWidgetInputsToCanonical(
+      inputs as {
+        homeValue: number;
+        initialBuyAmount: number;
+        termYears: number;
+        annualGrowthRate: number;
+      },
+    );
+
+    const result = await mintDraftToken(draftPayload, mapped.ok ? mapped.data : undefined);
+
+    if (result.ok) {
+      setGate({ step: "registration_gate", pendingAction: "save", resumeUrl: result.resumeUrl, snapshot });
+    } else {
+      setGate({ step: "mint_error", pendingAction: "save", message: result.error, snapshot });
+    }
+  }, [persistDraftToStorage, buildDraftPayload, mintDraftToken]);
+
+  const handleShareSummary = useCallback(async (summary: ShareSummary) => {
     try {
       localStorage.setItem("fractpath_pending_action", "share");
       localStorage.setItem("fractpath_share_summary", JSON.stringify(summary));
     } catch { /* noop */ }
 
-    setGate({ step: "registration_gate", pendingAction: "share", summary });
+    setGate({ step: "minting", pendingAction: "share", summary });
     setEmailInput("");
-  }, []);
+
+    const snapshotData = (summary as unknown as Record<string, unknown>).snapshot as WidgetSnapshot | undefined;
+    let draftPayload: Record<string, unknown>;
+    let canonicalInputs: unknown = undefined;
+
+    if (snapshotData) {
+      draftPayload = buildDraftPayload(snapshotData);
+      const inputs = buildCanonicalInputs(snapshotData);
+      const mapped = mapWidgetInputsToCanonical(
+        inputs as {
+          homeValue: number;
+          initialBuyAmount: number;
+          termYears: number;
+          annualGrowthRate: number;
+        },
+      );
+      if (mapped.ok) canonicalInputs = mapped.data;
+    } else {
+      const now = new Date().toISOString();
+      draftPayload = {
+        contract_version: CONTRACT_VERSION,
+        schema_version: SCHEMA_VERSION,
+        engine_version: ENGINE_VERSION,
+        compute_version: COMPUTE_VERSION,
+        mode: "marketing",
+        created_at: now,
+        computed_at: now,
+        persona,
+        deal_terms: {},
+        assumptions: {},
+        inputs: {},
+        basic_results: {},
+      };
+    }
+
+    const result = await mintDraftToken(draftPayload, canonicalInputs);
+
+    if (result.ok) {
+      setGate({ step: "registration_gate", pendingAction: "share", resumeUrl: result.resumeUrl, summary });
+    } else {
+      setGate({ step: "mint_error", pendingAction: "share", message: result.error, summary });
+    }
+  }, [persona, buildDraftPayload, mintDraftToken]);
 
   const handleEvent = useCallback((event: WidgetEvent) => {
     trackEvent(event);
@@ -329,7 +443,7 @@ export function CalculatorEmbed({
     setGate({ step: "idle" });
   }, []);
 
-  const isRegistrationModalOpen = gate.step === "registration_gate";
+  const isRegistrationModalOpen = gate.step === "registration_gate" || gate.step === "minting" || gate.step === "mint_error";
 
   const isSaveModalOpen =
     gate.step === "save_gate" ||
@@ -779,7 +893,14 @@ export function CalculatorEmbed({
           if (!open) closeModal();
         }}
         persona={persona as "homeowner" | "buyer" | "realtor"}
-        pendingAction={gate.step === "registration_gate" ? gate.pendingAction : undefined}
+        pendingAction={
+          gate.step === "registration_gate" || gate.step === "minting" || gate.step === "mint_error"
+            ? gate.pendingAction
+            : undefined
+        }
+        resumeUrl={gate.step === "registration_gate" ? gate.resumeUrl : null}
+        tokenError={gate.step === "mint_error" ? gate.message : null}
+        minting={gate.step === "minting"}
       />
     </div>
   );

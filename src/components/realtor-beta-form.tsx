@@ -26,45 +26,13 @@ export function RealtorBetaForm() {
     trackCustomEvent("realtor_beta_submitted", { email: trimEmail });
 
     try {
-      const res = await fetch("/api/lead", {
+      const res = await fetch("/api/realtor-interest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: trimEmail,
-          persona: "realtor",
-          draftSnapshot: {
-            contract_version: "10.2.0",
-            schema_version: "1",
-            engine_version: "10.2.0",
-            compute_version: "10.2.0",
-            mode: "marketing",
-            email: trimEmail,
-            persona: "realtor",
-            created_at: new Date().toISOString(),
-            computed_at: new Date().toISOString(),
-            deal_terms: {
-              property_value: 500000,
-              upfront_payment: 100000,
-            },
-            assumptions: {
-              annual_appreciation: 0.03,
-              closing_cost_pct: 0.03,
-              exit_year: 5,
-            },
-            inputs: {
-              homeValue: 500000,
-              initialBuyAmount: 100000,
-              termYears: 5,
-              annualGrowthRate: 0.03,
-            },
-            basic_results: {},
-            meta: {
-              interest: "fractpath",
-              stage: "early-access",
-              name: name.trim() || undefined,
-              brokerage: brokerage.trim() || undefined,
-            },
-          },
+          name: name.trim() || undefined,
+          brokerage: brokerage.trim() || undefined,
         }),
       });
 

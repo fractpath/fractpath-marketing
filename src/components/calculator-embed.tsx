@@ -50,6 +50,7 @@ import {
   trackLeadEmailSubmitted,
   trackCustomEvent,
 } from "@/lib/analytics";
+import { RegistrationGateModal } from "@/components/registration-gate-modal";
 
 const PERSONA_OPTIONS: { value: CalculatorPersona; label: string }[] = [
   { value: "homeowner", label: "Homeowner" },
@@ -61,6 +62,7 @@ type WidgetSnapshot = DraftSnapshot | FullDealSnapshotV1;
 
 type GateState =
   | { step: "idle" }
+  | { step: "registration_gate"; pendingAction: "save" | "share"; snapshot?: WidgetSnapshot; summary?: ShareSummary }
   | { step: "save_gate"; snapshot: WidgetSnapshot }
   | { step: "save_submitting"; snapshot: WidgetSnapshot; email: string }
   | { step: "save_done" }
@@ -255,6 +257,34 @@ export function CalculatorEmbed({
     [onPersonaChange],
   );
 
+  const persistDraftToStorage = useCallback((snapshot: WidgetSnapshot) => {
+    try {
+      const dealTerms = buildCanonicalDealTerms(snapshot);
+      const scenario = buildCanonicalScenario(snapshot);
+      const inputs = buildCanonicalInputs(snapshot);
+      const basicResults = buildBasicResults(snapshot);
+      const now = new Date().toISOString();
+
+      const payload = {
+        contract_version: CONTRACT_VERSION,
+        schema_version: SCHEMA_VERSION,
+        engine_version: ENGINE_VERSION,
+        compute_version: COMPUTE_VERSION,
+        mode: "marketing",
+        created_at: snapshot.created_at || now,
+        computed_at: now,
+        deal_terms: dealTerms,
+        assumptions: scenario,
+        inputs,
+        basic_results: basicResults,
+      };
+
+      localStorage.setItem("fractpath_draft_snapshot", JSON.stringify(payload));
+    } catch {
+      console.warn("[draft-storage] could not persist snapshot to localStorage");
+    }
+  }, []);
+
   const handleDraftSnapshot = useCallback((snapshot: WidgetSnapshot) => {
     console.log("[widget] snapshot emitted", {
       type: isFullDealSnapshot(snapshot)
@@ -270,13 +300,24 @@ export function CalculatorEmbed({
     if (typeof w.__fractpath_saveSnapshot === "function") {
       w.__fractpath_saveSnapshot(snapshot);
     }
-    
-    setGate({ step: "save_gate", snapshot });
+
+    persistDraftToStorage(snapshot);
+
+    try {
+      localStorage.setItem("fractpath_pending_action", "save");
+    } catch { /* noop */ }
+
+    setGate({ step: "registration_gate", pendingAction: "save", snapshot });
     setEmailInput("");
-  }, []);
+  }, [persistDraftToStorage]);
 
   const handleShareSummary = useCallback((summary: ShareSummary) => {
-    setGate({ step: "share_gate", summary });
+    try {
+      localStorage.setItem("fractpath_pending_action", "share");
+      localStorage.setItem("fractpath_share_summary", JSON.stringify(summary));
+    } catch { /* noop */ }
+
+    setGate({ step: "registration_gate", pendingAction: "share", summary });
     setEmailInput("");
   }, []);
 
@@ -287,6 +328,8 @@ export function CalculatorEmbed({
   const closeModal = useCallback(() => {
     setGate({ step: "idle" });
   }, []);
+
+  const isRegistrationModalOpen = gate.step === "registration_gate";
 
   const isSaveModalOpen =
     gate.step === "save_gate" ||
@@ -499,12 +542,13 @@ export function CalculatorEmbed({
 
   return (
     <div className="space-y-6">
-      <div className="mx-auto flex max-w-[920px] items-center justify-center gap-2">
+      <div className="mx-auto flex max-w-[920px] items-center justify-center gap-2 rounded-full border bg-background p-1 shadow-sm w-fit">
         {PERSONA_OPTIONS.map((opt) => (
           <Button
             key={opt.value}
-            variant={persona === opt.value ? "default" : "outline"}
+            variant={persona === opt.value ? "default" : "ghost"}
             size="sm"
+            className="rounded-full px-5"
             onClick={() => handlePersonaChange(opt.value)}
           >
             {opt.label}
@@ -512,7 +556,7 @@ export function CalculatorEmbed({
         ))}
       </div>
 
-      <div className="mx-auto max-w-[920px]">
+      <div className="mx-auto max-w-[920px] rounded-2xl border bg-background p-4 shadow-sm sm:p-6">
         <WidgetErrorBoundary onError={() => setWidgetError(true)}>
           <FractPathCalculatorWidget
             persona={persona}
@@ -728,6 +772,15 @@ export function CalculatorEmbed({
           )}
         </DialogContent>
       </Dialog>
+
+      <RegistrationGateModal
+        open={isRegistrationModalOpen}
+        onOpenChange={(open) => {
+          if (!open) closeModal();
+        }}
+        persona={persona as "homeowner" | "buyer" | "realtor"}
+        pendingAction={gate.step === "registration_gate" ? gate.pendingAction : undefined}
+      />
     </div>
   );
 }

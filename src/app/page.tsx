@@ -9,6 +9,7 @@ import {
 } from "@/components/ui-kit";
 import { HeroCta } from "@/components/hero-cta";
 import { PersonaPageContent } from "@/components/persona-page-content";
+import { RealtorBetaForm } from "@/components/realtor-beta-form";
 import {
   Home,
   Key,
@@ -26,20 +27,22 @@ export default function HomePage() {
     <div id="top" className="min-h-screen">
       <TopNav />
 
-      <Section className="bg-gradient-to-b from-background to-muted/30 pt-20 sm:pt-28 lg:pt-32">
+      <Section className="relative overflow-hidden bg-gradient-to-b from-background via-background to-muted/40 pt-24 sm:pt-32 lg:pt-36">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-muted/50 via-transparent to-transparent" />
+        <div className="pointer-events-none absolute inset-0 hero-grid-pattern opacity-[0.03]" />
         <Container>
-          <div className="mx-auto max-w-3xl text-center">
-            <Badge variant="secondary" className="mb-4">
-              Fractional Equity Scenario Modeling
+          <div className="relative mx-auto max-w-3xl text-center">
+            <Badge variant="secondary" className="mb-6 px-4 py-1.5 text-xs font-medium tracking-wide">
+              Home Appreciation Agreements
             </Badge>
 
-            <h1 className="text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
               Model Your Path to Equity
             </h1>
 
-            <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-              See how fractional ownership could work for your property, your
-              investment, or your clients &mdash; all estimates, no obligations.
+            <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+              See how structured appreciation agreements could work for your
+              property or your clients &mdash; all estimates, no obligations.
             </p>
 
             <HeroCta />
@@ -64,13 +67,13 @@ export default function HomePage() {
             />
             <FeatureCard
               icon={Key}
-              title="Build Equity Over Time"
-              body="Model how monthly contributions can build ownership in a property. See projected equity growth and payoff scenarios."
+              title="Participate in Appreciation"
+              body="Model how structured agreements tied to future appreciation can create pathways to equity over time."
             />
             <FeatureCard
               icon={Users}
               title="Referral Opportunities"
-              body="Realtors can model referral commissions through fractional equity transactions and offer clients a new option."
+              body="Realtors can model referral scenarios and offer clients a structured alternative to traditional financing."
             />
           </div>
         </Container>
@@ -143,7 +146,7 @@ export default function HomePage() {
         </Container>
       </Section>
 
-      <Section id="faq">
+      <Section id="faq" className="bg-muted/30">
         <Container>
           <PageHeader
             eyebrow="FAQ"
@@ -151,18 +154,18 @@ export default function HomePage() {
             subtitle="Get clarity on how FractPath works and what to expect."
           />
           <div className="mx-auto max-w-2xl space-y-6">
-            <div>
+            <div className="rounded-xl border bg-background p-5 shadow-sm">
               <h3 className="mb-2 font-semibold">
                 Is FractPath a loan or mortgage product?
               </h3>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                No. FractPath models fractional equity scenarios. It is not a
-                lender and does not provide loans, mortgages, or financial
-                advice. All outputs are estimates for scenario modeling
-                purposes.
+                No. FractPath models home appreciation agreement scenarios. It
+                is not a lender and does not provide loans, mortgages, or
+                financial advice. All outputs are estimates for scenario
+                modeling purposes.
               </p>
             </div>
-            <div>
+            <div className="rounded-xl border bg-background p-5 shadow-sm">
               <h3 className="mb-2 font-semibold">
                 How are equity calculations determined?
               </h3>
@@ -173,7 +176,7 @@ export default function HomePage() {
                 only.
               </p>
             </div>
-            <div>
+            <div className="rounded-xl border bg-background p-5 shadow-sm">
               <h3 className="mb-2 font-semibold">Is my information safe?</h3>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 We take data privacy seriously. Scenario inputs are used only to
@@ -181,7 +184,7 @@ export default function HomePage() {
                 details.
               </p>
             </div>
-            <div>
+            <div className="rounded-xl border bg-background p-5 shadow-sm">
               <h3 className="mb-2 font-semibold">
                 What states does FractPath operate in?
               </h3>
@@ -194,15 +197,16 @@ export default function HomePage() {
         </Container>
       </Section>
 
-      <Section id="realtor-beta" className="bg-muted/30">
+      <Section id="realtor-beta">
         <Container>
           <div className="mx-auto max-w-2xl text-center">
             <PageHeader
               eyebrow="Realtor Beta Program"
               title="Join the Beta"
-              subtitle="Be among the first realtors to offer fractional equity paths to your clients. Early access, priority support, and referral commissions."
+              subtitle="Be among the first realtors to offer structured appreciation agreements to your clients. Early access, priority support, and referral opportunities."
             />
           </div>
+          <RealtorBetaForm />
         </Container>
       </Section>
 

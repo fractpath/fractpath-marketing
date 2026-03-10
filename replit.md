@@ -1,101 +1,7 @@
 # FractPath Marketing Site
 
 ## Overview
-FractPath marketing homepage - a Next.js application for fractional real estate ownership scenario modeling. Embeds the `fractpath-calculator-widget` for all calculator logic.
-
-## Project Structure
-```
-/src
-  /app
-    layout.tsx         - Root layout with fonts and Toaster
-    page.tsx           - Main homepage with static sections + PersonaPageContent
-    globals.css        - Tailwind CSS imports and shadcn/ui variables
-    /api
-      /lead/route.ts   - POST /api/lead — { email, persona, draftSnapshot } → { resume_token }
-      /share/route.ts  - POST /api/share — { to_email, shareSummary } → { share_token }
-  /components
-    /ui                - shadcn/ui components (Button, Card, Input, Dialog, etc.)
-    /ui-kit            - Custom layout primitives (Container, Section, TopNav, Footer, etc.)
-    calculator-embed.tsx - Widget embed with persona tabs, Save & Continue modal, Share modal, error boundary
-    persona-page-content.tsx - Client component wrapping persona-dependent page sections (hero, calculator, value props, trust)
-  /content
-    personas.ts        - Persona content system (hero copy, value props, calculator labels, trust bullets per persona)
-  /lib
-    utils.ts           - cn() utility for class merging
-    analytics.ts       - Analytics event tracking (Plausible-compatible): persona_selected, lead_email_submitted, cta_signup_clicked, cta_contact_clicked, widget events
-    canonicalInputMapper.ts - Maps widget camelCase inputs to canonical v10.1 snake_case deal_terms + scenario; all defaults as constants
-  /types
-    fractpath-calculator-widget.d.ts - Ambient type declarations mirroring real widget API
-/public
-  /brand               - Logo assets (SVG)
-/docs
-  /migration           - Widget migration boundary docs
-  /tickets             - Feature tickets + WGT-030-supplement.md
-/fractpath-calculator-widget-src  - Widget source checkout (excluded from tsc)
-/fractpath-calculator-widget-pack - Widget tarball package
-/fractpath-marketing              - Old subdir (excluded from tsc, legacy)
-```
-
-## Tech Stack
-- **Framework**: Next.js 16 (App Router, Turbopack)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS + shadcn/ui
-- **Widget**: fractpath-calculator-widget v1.0.0 (local tarball: fractpath-calculator-widget-1.0.0.tgz, GitHub SHA 3ed0ee2b)
-
-## Widget Integration
-- Widget package: installed from local tarball `file:./fractpath-calculator-widget-1.0.0.tgz`
-- Tarball built from GitHub source (SHA 3ed0ee2b1be4cc969982dc21d1b6e675f5830374)
-- Ambient `.d.ts` file mirrors real widget types (needed because tsc can't resolve from the tarball's dist-types with bundler resolution)
-- Marketing does NOT contain calculator math — widget is canonical source of truth
-- Widget provides: FractPathCalculatorWidget component, DraftSnapshot, ShareSummary, WidgetEvent types
-- Widget requires `persona` prop (CalculatorPersona: homeowner | buyer | realtor | investor | ops)
-- Marketing provides: persona selector UI, email gate UI, share modal, /api/lead route, /api/share route, analytics wiring
-
-## Persona Content System
-- `src/content/personas.ts` defines persona-specific copy for 3 personas: homeowner, buyer, realtor (retained for future persona-specific landing pages)
-- Hero, value props, and trust sections are **static** — they do NOT change when persona tabs are switched
-- `PersonaPageContent` client component wraps only the calculator section (persona tabs + widget embed)
-- Persona tabs only affect the calculator area below the tab controller; all other page sections are server-rendered and static
-
-## API Routes
-- **POST /api/lead**: Receives { email, persona, draftSnapshot, canonicalInputs?, canonicalSnapshot? }, validates persona + snapshot structure, rejects full-only fields, server-to-server mint via app's draft-tokens/mint with local PostgreSQL fallback when app is unreachable, HubSpot upsert as non-blocking side effect, returns { ok, token, resumeUrl, mint_source? }
-- **POST /api/share**: Receives { to_email, shareSummary }, generates opaque share_token, sends branded email via SES if configured, returns { share_token }
-
-## Key Flows
-1. **Persona Selection**: User clicks Homeowner/Buyer/Realtor tab → updates widget persona prop + page content → tracks persona_selected event
-2. **Save & Continue**: Widget emits onDraftSnapshot → canonical input mapper → email gate UI → POST /api/lead with { email, persona, draftSnapshot, canonicalInputs } → server-to-server mint → receive { token, resumeUrl }
-3. **Share**: Widget emits onShareSummary → share email modal → POST /api/share with { to_email, shareSummary } → receive share_token
-
-## Analytics Events (MKT-011)
-- `persona_selected` — { persona }
-- `lead_email_submitted` — { persona }
-- `cta_signup_clicked` — { location: "nav" | "hero" }
-- `cta_contact_clicked` — { location: "footer" }
-- Widget events forwarded via onEvent: calculator_used, share_clicked, save_continue_clicked, save_clicked
-
-## Development
-- Run `npm run dev` to start the development server on port 5000
-- Frontend binds to `0.0.0.0:5000`
-- next.config.ts uses wildcard `*.replit.dev` and `*.repl.co` for allowedDevOrigins
-- tsconfig.json excludes `fractpath-calculator-widget-src`, `fractpath-marketing` directories
-
-## Rebuilding Widget Tarball
-If the upstream widget changes, rebuild the tarball:
-1. `cd fractpath-calculator-widget-src && npm install && npm run build`
-2. Edit `fractpath-calculator-widget-src/package.json` to remove any `workspace:*` dependencies
-3. `npm pack` to produce new tarball
-4. Copy tarball to workspace root: `cp fractpath-calculator-widget-0.0.0.tgz ../`
-5. `cd .. && npm install` to reinstall
-6. Update `src/types/fractpath-calculator-widget.d.ts` if the widget API changed
-
-## Environment Variables
-- `FRACTPATH_APP_URL` — Base URL for the FractPath app, used server-side for mint calls and resumeUrl construction (default: https://app.fractpath.com)
-- `NEXT_PUBLIC_FRACTPATH_APP_URL` — Base URL for the FractPath app, used client-side for Save & Continue navigation (default: https://app.fractpath.com). For Replit dev, set to the app project's public Replit URL.
-- `FRACTPATH_BASE_URL` — Base URL for marketing share links (default: https://fractpath.com)
-- `HUBSPOT_ACCESS_TOKEN` — (Secret) For lead CRM upsert (non-blocking side effect)
-- `HUBSPOT_ENABLED` — Set to "true" to enable HubSpot upsert
-- `MARKETING_SHARE_EMAIL_ENABLED` — Set to "true" to enable SES email sharing
-- `SES_FROM`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` — SES email configuration
+The FractPath marketing site is a Next.js application designed to showcase fractional real estate ownership scenario modeling. Its primary purpose is to attract potential users by allowing them to interact with a fractional real estate calculator widget. The site focuses on providing a clear and engaging user experience, driving user acquisition, and acting as a lead generation tool for the main FractPath application. It offers persona-specific content and features to cater to different user segments like homeowners, buyers, and realtors.
 
 ## User Preferences
 - Conservative, trustworthy tone (not salesy)
@@ -106,32 +12,23 @@ If the upstream widget changes, rebuild the tarball:
 - No invention — all inputs, outputs, labels, events must come from tickets
 - Preserve marketing → app snapshot contract
 
-## Canonical Compute Migration
-- Marketing has ZERO imports of @/lib/compute — legacy bridge file deleted
-- `src/lib/canonicalInputMapper.ts` is the single canonical mapping layer (v10.1.0)
-- All defaults live in DEAL_TERMS_DEFAULTS / SCENARIO_DEFAULTS constants in the mapper
-- Calculator-embed.tsx sends `canonicalInputs` (deal_terms + scenario, snake_case) to /api/lead
-- /api/lead forwards `canonicalSnapshot` (camelCase key, not canonical_snapshot) to app mint
-- /api/lead also accepts and forwards `canonicalInputs` to app mint
-- Drift guard tests in tests/drift-guards.test.ts prevent reintroduction of legacy compute
-- No local recompute in marketing — widget owns UI computation, app owns canonical compute
+## System Architecture
+The site is built with Next.js 16 (App Router) and TypeScript, utilizing Tailwind CSS and shadcn/ui for styling. The core functionality revolves around embedding the `fractpath-calculator-widget` (v1.0.0), which is the canonical source of truth for all calculator logic and calculations.
 
-## Recent Changes
-- 2026-02-21: Fixed Save & Continue mint failure — App Replit was offline (503). Added local PostgreSQL mint fallback: when remote app mint fails, marketing inserts draft_tokens locally and returns token + resumeUrl. Restored proper handleSaveSubmit with gate state management (save_submitting state), draftSnapshotForLead canonical payload, and error handling. Added animated spinner to Save & Continue button during submission. Improved canonicalSnapshot body handling in /api/lead (buildDraftFromCanonical). Fixed dev server port to 5000. All 41 tests pass. E2E verified: POST /api/lead returns 201 with token via local_fallback.
-- 2026-02-20: Sprint 11 widget upgrade — Upgraded widget from v0.0.0 to v1.0.0 (GitHub SHA 3ed0ee2b). Widget now exports Sprint 11 components (DealSnapshotView, DealEditModal, MARKETING_PERSONAS). Tarball rebuilt from GitHub source. All 41 tests pass (35 save-continue + 6 drift guards). E2E mint handshake verified (HTTP 201, token + resumeUrl). No stale version literals. Top-level-only imports enforced. replit.md updated.
-- 2026-02-20: Phase 2 — Contract version bump to 10.2.0. Updated calculator-embed.tsx (contract_version, engine_version, compute_version all "10.2.0"). Added shape assert guard in /api/lead route: rejects any snapshot where contract_version !== "10.2.0" or schema_version !== "1" with 422. Cleaned up legacy createMinimalDraftSnapshot fallback (was "v1"/"draft_v1", now "10.2.0"/"1"). Tests updated: 35 save-continue + 6 drift guards pass. Build passes. Grep confirms no stale "10.1.0", "1.0.0", "draft_v1", or schema_version "v1" in touched files. 0 LSP errors.
-- 2026-02-18: FullDealSnapshotV1 canonical compliance — Enforced canonical v10.1.0 snapshot shape: every emitted snapshot now includes deal_terms (all 18 fields), assumptions (annual_appreciation, closing_cost_pct, exit_year), compute_version/contract_version/engine_version "10.1.0", schema_version "1", mode "marketing", computed_at timestamp. Removed floor/ceiling multiple inputs from Save modal (now defaulted from DEAL_TERMS_DEFAULTS). Modal collects only email; role via persona tabs. Added buildCanonicalDealTerms, buildCanonicalScenario, buildCanonicalInputs, buildBasicResults helpers. Legacy DraftSnapshot shapes are upconverted to canonical form. 35 save-continue tests (canonical compliance, snapshot injection, modal behavior, no floor/ceiling in modal, event tracking, resume navigation) + 6 drift guards all pass. 4/4 API curl tests pass (canonical 201, missing 422, full_results rejection 422, buyer 201). 0 LSP errors.
-- 2026-02-18: Save & Continue modal overlay + snapshot injection fix — Converted inline save/share forms to Dialog modal overlays with shaded background, Esc/Cancel close, auto-focus email input. Fixed broken render (gate forms were missing from JSX). Added extractInputsFromSnapshot/extractBasicResultsFromSnapshot helpers for FullDealSnapshotV1→DraftSnapshot field mapping. Email, persona, created_at injected inside draftSnapshot before POST. Added 18 save-continue tests (snapshot injection, modal behavior, event tracking, resume navigation). All 5 API validation tests pass, 6/6 drift guards pass, 0 LSP errors. No compute imports. No stubs.
-- 2026-02-18: Email-aware Save & Continue — calculator-embed.tsx now injects email, persona, created_at inside draftSnapshot before POST to /api/lead (not just as top-level body fields). Added inputs/basic_results fallbacks for FullDealSnapshotV1 snapshots. All 5 validation test cases pass (canonical 201, missing fields 422, legacy 201, FullDealSnapshotV1 201, full_results rejection 422). 6/6 drift guards pass. No compute imports. No stubs.
-- 2026-02-18: Multi-repo verification — fixed page.tsx duplicate imports, added FullDealSnapshotV1 type to widget + ambient d.ts, fixed widget build (missing type, async buildSavePayload, initialSnapshot prop), rebuilt tarball with dist/ included (.npmignore), updated calculator-embed to handle DraftSnapshot|FullDealSnapshotV1 union, marketing build passes, 6/6 drift guards pass, env vars split dev/prod
-- 2026-02-17: Hardened Save & Continue resume URL — client-side URL construction now uses NEXT_PUBLIC_FRACTPATH_APP_URL env var instead of hardcoded app base; server-side /api/lead always returns absolute resumeUrl; dev-only console.log for navigation debugging
-- 2026-02-16: Sprint 10 Phase 5B — Canonical v10.1 migration cutover: removed all @/lib/compute imports, deleted legacy bridge, created canonicalInputMapper.ts, fixed mint payload key drift (canonical_snapshot → canonicalSnapshot), added canonicalInputs acceptance in lead route, added 9 drift guard tests
-- 2026-02-13: Fixed /api/lead rejecting widget draftSnapshot — removed input_hash and output_hash from FULL_ONLY_KEYS (they are integrity hashes emitted in marketing mode, not app-only fields). Verified all flows end-to-end.
-- 2026-02-13: Fixed persona scope per WGT-030 guardrails — hero, value props, trust are now static; only calculator area (below tabs) changes with persona. Added console logging to Save & Continue and Share flows for preview debugging. Updated WGT-030-supplement.md.
-- 2026-02-13: Implemented persona content system (MKT-003), wired onShareSummary flow with share email modal, aligned /api/share with MKT-006 contract ({ to_email, shareSummary } → { share_token }), added cta_signup_clicked and cta_contact_clicked analytics (MKT-011), added footer privacy note, created WGT-030-supplement.md documenting gaps
-- 2026-02-13: Aligned type declarations with real widget API, added persona selector (Homeowner/Buyer/Realtor), wired onDraftSnapshot for Save & Continue flow, updated /api/lead to accept { email, persona, draftSnapshot }, enhanced analytics with persona_selected/lead_email_submitted events, fixed next.config allowedDevOrigins, excluded stale subdirs from tsconfig
-- 2026-02-09: Sprint 5 — Embedded widget, email gate, /api/lead, /api/share, analytics
-- 2026-02-06: MKT-A — Migration docs declaring widget as calculator source of truth
-- 2026-02-06: MKT-003 — Persona content system
-- 2026-02-06: MKT-002 — shadcn/ui design system and layout primitives
-- 2026-02-05: MKT-001 — Initial setup
+**Key Features and Design Patterns:**
+- **Persona-Based Content System:** `src/content/personas.ts` defines persona-specific copy for homeowners, buyers, and realtors. Static hero, value propositions, and trust sections are server-rendered, while the calculator area (tabs + widget embed) is a client component (`PersonaPageContent`) that updates based on persona selection.
+- **Widget Integration:** The `fractpath-calculator-widget` is integrated via git tag. The marketing site provides the UI for persona selection, registration gating, and sharing, while the widget handles the complex calculations and state management.
+- **Registration Gate:** Calculator CTAs (Save & Continue, Share) open a registration modal that mirrors the app signup form. Draft snapshot is persisted to localStorage before redirecting to app signup with context params (persona, returnTo, draft=pending).
+- **API Endpoints:**
+    - `POST /api/lead`: Handles lead generation by receiving user email, persona, and a draft snapshot of calculator inputs. It performs server-to-server minting with the main FractPath app or falls back to a local PostgreSQL store. It also integrates with HubSpot for CRM upserts.
+    - `POST /api/share`: Facilitates sharing of calculator summaries via email. It generates a share token and sends a branded email using SES.
+- **Analytics:** Plausible-compatible event tracking is implemented for key user interactions such as persona selection, lead submission, and call-to-action clicks.
+- **Canonical Input Mapping:** `src/lib/canonicalInputMapper.ts` ensures that widget inputs are mapped to a canonical `v10.1` snake_case format for `deal_terms` and `scenario` before being sent to the backend.
+- **UI/UX:** The site uses `shadcn/ui` components and custom `ui-kit` primitives for a consistent and modern design. Modals are used for user registration, saving, and sharing.
+
+## External Dependencies
+- **fractpath-calculator-widget:** The core calculator widget, integrated as a local npm tarball.
+- **HubSpot:** Used for CRM integration to upsert lead information (`HUBSPOT_ACCESS_TOKEN`).
+- **Amazon SES (Simple Email Service):** Employed for sending branded share emails (`SES_FROM`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`).
+- **FractPath Main Application:** Interacted with via `FRACTPATH_APP_URL` for server-to-server minting of draft tokens and `NEXT_PUBLIC_FRACTPATH_APP_URL` for client-side navigation.
+- **Plausible Analytics (implied):** Analytics events are designed to be compatible with Plausible or similar privacy-friendly analytics platforms.

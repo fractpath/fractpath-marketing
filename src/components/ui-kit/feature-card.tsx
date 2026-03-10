@@ -16,9 +16,9 @@ export function FeatureCard({
   className,
 }: FeatureCardProps) {
   return (
-    <Card className={cn("rounded-2xl shadow-sm", className)}>
+    <Card className={cn("rounded-2xl border shadow-sm transition-shadow hover:shadow-md", className)}>
       <CardContent className="p-6 sm:p-8">
-        <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+        <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/5 ring-1 ring-primary/10">
           <Icon className="h-5 w-5 text-primary" />
         </div>
         <h3 className="mb-2 text-lg font-semibold">{title}</h3>

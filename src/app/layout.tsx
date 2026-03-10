@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   title: "FractPath — Debt-Free Equity Access",
   description:
     "Model your path to homeownership or unlock your home equity without debt. Scenario modeling for homeowners, buyers, and realtors.",
+  icons: {
+    icon: "/brand/FractPath_Icon_Black.svg",
+    apple: "/brand/FractPath_Icon_Black.svg",
+  },
 };
 
 export default function RootLayout({

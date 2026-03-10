@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, type FormEvent } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  type FormEvent,
+} from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -55,7 +61,9 @@ export function RegistrationGateModal({
   const [persona, setPersona] = useState<string>(prefillPersona || "");
   const [submitting, setSubmitting] = useState(false);
   const [signupDone, setSignupDone] = useState(false);
-  const [verificationStateId, setVerificationStateId] = useState<string | null>(null);
+  const [verificationStateId, setVerificationStateId] = useState<string | null>(
+    null,
+  );
   const [verificationExpired, setVerificationExpired] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const emailRef = useRef<HTMLInputElement>(null);
@@ -179,41 +187,10 @@ export function RegistrationGateModal({
         // verification state creation failed — continue without polling
       }
 
-      let emailRedirectTo = `${APP}/auth/callback?next=${encodeURIComponent(callbackNext)}`;
+      let emailRedirectTo = `${APP}/auth/finish?next=${encodeURIComponent(callbackNext)}`;
       if (stateId) {
         emailRedirectTo += `&verify_state=${encodeURIComponent(stateId)}`;
       }
-
-      if (!emailRedirectTo.includes("/auth/callback")) {
-        console.error("[registration-gate] INVALID_EMAIL_REDIRECT_BASE — missing /auth/callback");
-      }
-      if (!emailRedirectTo.includes("next=")) {
-        console.error("[registration-gate] MISSING_NEXT_PARAM");
-      }
-
-      console.log("[registration-gate] signup-debug", {
-        appBaseUrl: APP,
-        resumeUrl,
-        callbackNext,
-        verificationStateId: stateId,
-        emailRedirectTo,
-        signUpPayload: {
-          email: trimEmail,
-          options: {
-            emailRedirectTo,
-            data: { role: persona, source: "marketing" },
-          },
-        },
-      });
-
-
-      console.log("=== FRACTPATH SIGNUP DEBUG START ===");
-      console.log("APP_BASE_URL:", APP);
-      console.log("resumeUrl:", resumeUrl);
-      console.log("verificationStateId:", verificationStateId);
-      console.log("emailRedirectTo:", emailRedirectTo);
-      console.log("email:", trimEmail);
-      console.log("=== FRACTPATH SIGNUP DEBUG END ===");
 
       const targetUrl =
         `${APP}/signup?returnTo=${encodeURIComponent(resumeUrl)}` +
@@ -239,7 +216,8 @@ export function RegistrationGateModal({
       window.location.assign(targetUrl);
       return;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Signup failed. Please try again.";
+      const msg =
+        err instanceof Error ? err.message : "Signup failed. Please try again.";
       setError(msg);
       setSubmitting(false);
     }
@@ -277,16 +255,14 @@ export function RegistrationGateModal({
               <DialogTitle className="text-xl">Verify your email</DialogTitle>
               <p className="text-sm text-muted-foreground">
                 We sent a confirmation link to <strong>{email.trim()}</strong>.
-                Open that link to finish creating your account and continue
-                to your draft in FractPath.
+                Open that link to finish creating your account and continue to
+                your draft in FractPath.
               </p>
             </>
           ) : (
             <>
               <DialogTitle className="text-xl">Create your account</DialogTitle>
-              <p className="text-sm text-muted-foreground">
-                {helperText}
-              </p>
+              <p className="text-sm text-muted-foreground">{helperText}</p>
             </>
           )}
         </DialogHeader>

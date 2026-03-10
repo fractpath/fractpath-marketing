@@ -87,3 +87,9 @@
     @apply bg-background text-foreground font-sans antialiased;
   }
 }
+
+.hero-grid-pattern {
+  background-image: linear-gradient(to right, currentColor 1px, transparent 1px),
+    linear-gradient(to bottom, currentColor 1px, transparent 1px);
+  background-size: 48px 48px;
+}

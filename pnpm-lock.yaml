@@ -24,8 +24,8 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       fractpath-calculator-widget:
-        specifier: github:fractpath/fractpath-calculator-widget#v1.0.7
-        version: https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/99c8feb08155bcefd3b8249fefd162b4d3ad8137(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)
+        specifier: github:fractpath/fractpath-calculator-widget#v1.0.8
+        version: https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/4cb7fc0fb3d69645a25ff745bb5884baf1cc5e09(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1)
       lucide-react:
         specifier: ^0.563.0
         version: 0.563.0(react@19.2.3)
@@ -2557,8 +2557,8 @@ packages:
     resolution: {integrity: sha512-buewHzMvYL29jdeQTVILecSaZKnt/RJWjoZCF5OW60Z67/GmSLBkOFM7qh1PI3zFNtJbaZL5eQu1vLfazOwj4g==}
     engines: {node: '>=12.20.0'}
 
-  fractpath-calculator-widget@https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/99c8feb08155bcefd3b8249fefd162b4d3ad8137:
-    resolution: {tarball: https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/99c8feb08155bcefd3b8249fefd162b4d3ad8137}
+  fractpath-calculator-widget@https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/4cb7fc0fb3d69645a25ff745bb5884baf1cc5e09:
+    resolution: {tarball: https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/4cb7fc0fb3d69645a25ff745bb5884baf1cc5e09}
     version: 1.0.0
 
   fsevents@2.3.3:
@@ -6594,7 +6594,7 @@ snapshots:
     dependencies:
       fetch-blob: 3.2.0
 
-  fractpath-calculator-widget@https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/99c8feb08155bcefd3b8249fefd162b4d3ad8137(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1):
+  fractpath-calculator-widget@https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/4cb7fc0fb3d69645a25ff745bb5884baf1cc5e09(@types/node@20.19.37)(jiti@2.6.1)(lightningcss@1.31.1):
     dependencies:
       '@fractpath/compute': file:packages/compute
       react: 19.2.3

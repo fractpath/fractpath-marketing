@@ -12,7 +12,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { getAppBaseUrlClient } from "@/lib/appBaseUrl";
-import { getSupabaseClient } from "@/lib/supabaseClient";
 
 const VALID_PERSONAS = ["homeowner", "buyer", "realtor"] as const;
 type Persona = (typeof VALID_PERSONAS)[number];
@@ -207,7 +206,6 @@ export function RegistrationGateModal({
         },
       });
 
-      const supabase = getSupabaseClient();
 
       console.log("=== FRACTPATH SIGNUP DEBUG START ===");
       console.log("APP_BASE_URL:", APP);

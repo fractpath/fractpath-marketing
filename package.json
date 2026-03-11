@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.986.0",
+    "@supabase/supabase-js": "^2.99.0",
     "@types/pg": "^8.16.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

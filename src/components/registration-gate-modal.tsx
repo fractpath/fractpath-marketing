@@ -1,6 +1,6 @@
-import { useEffect } from "react";
+"use client";
+
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,8 @@ const PERSONA_LABELS: Record<Persona, string> = {
 
 const PERSONA_DESCRIPTIONS: Record<Persona, string> = {
   homeowner: "Explore a new way to unlock equity without taking on a loan.",
-  buyer: "Model a pathway to ownership through a shared appreciation structure.",
+  buyer:
+    "Model a pathway to ownership through a shared appreciation structure.",
   realtor: "Continue as a referral partner and co-pilot scenarios for clients.",
 };
 
@@ -45,10 +46,6 @@ export function RegistrationGateModal({
 }: RegistrationGateModalProps) {
   const APP = getAppBaseUrlClient();
 
-  useEffect(() => {
-    if (!open) return;
-  }, [open]);
-
   const selectedPersona = VALID_PERSONAS.includes((persona || "") as Persona)
     ? (persona as Persona)
     : "homeowner";
@@ -63,23 +60,6 @@ export function RegistrationGateModal({
     : `${APP}/signup?persona=${encodeURIComponent(selectedPersona)}`;
 
   const loginHref = `${APP}/login?returnTo=${encodeURIComponent(resumeUrl || "/")}`;
-
-  const handleCreateAccount = () => {
-    if (!resumeUrl) return;
-    try {
-      localStorage.setItem(
-        "fractpath_signup_prefill",
-        JSON.stringify({ persona: selectedPersona }),
-      );
-    } catch {
-      // ignore localStorage failures
-    }
-    window.location.assign(createAccountHref);
-  };
-
-  const handleLogin = () => {
-    window.location.assign(loginHref);
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -132,41 +112,42 @@ export function RegistrationGateModal({
               </ul>
             </div>
 
-      <div className="space-y-3">
-        {resumeUrl ? (
-          <a
-            href={createAccountHref}
-            className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
-            onClick={() => {
-              try {
-                localStorage.setItem(
-                  "fractpath_signup_prefill",
-                  JSON.stringify({ persona: selectedPersona }),
-                );
-              } catch {
-                // ignore localStorage failures
-              }
-            }}
-          >
-            Create free account
-          </a>
-        ) : (
-          <div className="inline-flex h-10 w-full items-center justify-center rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground">
-            Create free account
+            <div className="space-y-3">
+              {resumeUrl ? (
+                <a
+                  href={createAccountHref}
+                  className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+                  onClick={() => {
+                    try {
+                      localStorage.setItem(
+                        "fractpath_signup_prefill",
+                        JSON.stringify({ persona: selectedPersona }),
+                      );
+                    } catch {
+                      // ignore localStorage failures
+                    }
+                  }}
+                >
+                  Create free account
+                </a>
+              ) : (
+                <div className="inline-flex h-10 w-full items-center justify-center rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground">
+                  Create free account
+                </div>
+              )}
+
+              <a
+                href={loginHref}
+                className="inline-flex h-10 w-full items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                Log in
+              </a>
+
+              <p className="text-center text-[11px] text-muted-foreground/70">
+                Your scenario is already prepared and will continue in the app.
+              </p>
+            </div>
           </div>
-        )}
-
-        <a
-          href={loginHref}
-          className="inline-flex h-10 w-full items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-        >
-          Log in
-        </a>
-
-        <p className="text-center text-[11px] text-muted-foreground/70">
-          Your scenario is already prepared and will continue in the app.
-        </p>
-      </div>
         )}
       </DialogContent>
     </Dialog>

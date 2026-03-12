@@ -133,21 +133,29 @@ export function RegistrationGateModal({
             </div>
 
             <Button
-              type="button"
+              asChild
               className="w-full"
               disabled={!resumeUrl}
-              onClick={handleCreateAccount}
             >
-              Create free account
+              <a
+                href={createAccountHref}
+                onClick={() => {
+                  try {
+                    localStorage.setItem(
+                      "fractpath_signup_prefill",
+                      JSON.stringify({ persona: selectedPersona }),
+                    );
+                  } catch {
+                    // ignore localStorage failures
+                  }
+                }}
+              >
+                Create free account
+              </a>
             </Button>
 
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={handleLogin}
-            >
-              Log in
+            <Button asChild variant="outline" className="w-full">
+              <a href={loginHref}>Log in</a>
             </Button>
 
             <p className="text-center text-[11px] text-muted-foreground/70">

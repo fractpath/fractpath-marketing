@@ -132,36 +132,41 @@ export function RegistrationGateModal({
               </ul>
             </div>
 
-            <Button
-              asChild
-              className="w-full"
-              disabled={!resumeUrl}
-            >
-              <a
-                href={createAccountHref}
-                onClick={() => {
-                  try {
-                    localStorage.setItem(
-                      "fractpath_signup_prefill",
-                      JSON.stringify({ persona: selectedPersona }),
-                    );
-                  } catch {
-                    // ignore localStorage failures
-                  }
-                }}
-              >
-                Create free account
-              </a>
-            </Button>
-
-            <Button asChild variant="outline" className="w-full">
-              <a href={loginHref}>Log in</a>
-            </Button>
-
-            <p className="text-center text-[11px] text-muted-foreground/70">
-              Your scenario is already prepared and will continue in the app.
-            </p>
+      <div className="space-y-3">
+        {resumeUrl ? (
+          <a
+            href={createAccountHref}
+            className="inline-flex h-10 w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+            onClick={() => {
+              try {
+                localStorage.setItem(
+                  "fractpath_signup_prefill",
+                  JSON.stringify({ persona: selectedPersona }),
+                );
+              } catch {
+                // ignore localStorage failures
+              }
+            }}
+          >
+            Create free account
+          </a>
+        ) : (
+          <div className="inline-flex h-10 w-full items-center justify-center rounded-md bg-muted px-4 py-2 text-sm font-medium text-muted-foreground">
+            Create free account
           </div>
+        )}
+
+        <a
+          href={loginHref}
+          className="inline-flex h-10 w-full items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+        >
+          Log in
+        </a>
+
+        <p className="text-center text-[11px] text-muted-foreground/70">
+          Your scenario is already prepared and will continue in the app.
+        </p>
+      </div>
         )}
       </DialogContent>
     </Dialog>

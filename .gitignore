@@ -41,3 +41,7 @@ next-env.d.ts
 
 # local/editor artifacts
 attached_assets/
+
+# Next.js build/dev artifacts
+.next/
+**/.next/

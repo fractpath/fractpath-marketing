@@ -6,29 +6,29 @@ const EMBED_PATH = path.resolve("src/components/calculator-embed.tsx");
 const EMBED_SRC = fs.readFileSync(EMBED_PATH, "utf-8");
 
 describe("FullDealSnapshotV1 canonical compliance", () => {
-  it("always emits contract_version 10.2.0 in draft payload builder", () => {
+  it("always emits contract_version from CONTRACT_VERSION constant in draft payload builder", () => {
     const idx = EMBED_SRC.indexOf("const buildDraftPayload");
     expect(idx).toBeGreaterThan(-1);
     const block = EMBED_SRC.slice(idx, idx + 600);
-    expect(block).toMatch(/contract_version:\s*(CONTRACT_VERSION|"10\.2\.0")/);
+    expect(block).toMatch(/contract_version:\s*CONTRACT_VERSION/);
   });
 
-  it("always emits schema_version in draft payload builder", () => {
+  it("always emits schema_version from SCHEMA_VERSION constant in draft payload builder", () => {
     const idx = EMBED_SRC.indexOf("const buildDraftPayload");
     const block = EMBED_SRC.slice(idx, idx + 600);
-    expect(block).toMatch(/schema_version:\s*(SCHEMA_VERSION|"1")/);
+    expect(block).toMatch(/schema_version:\s*SCHEMA_VERSION/);
   });
 
-  it("always emits engine_version in draft payload builder", () => {
+  it("always emits engine_version from ENGINE_VERSION constant in draft payload builder", () => {
     const idx = EMBED_SRC.indexOf("const buildDraftPayload");
     const block = EMBED_SRC.slice(idx, idx + 600);
-    expect(block).toMatch(/engine_version:\s*(ENGINE_VERSION|"10\.2\.0")/);
+    expect(block).toMatch(/engine_version:\s*ENGINE_VERSION/);
   });
 
-  it("always emits compute_version in draft payload builder", () => {
+  it("always emits compute_version from COMPUTE_VERSION constant in draft payload builder", () => {
     const idx = EMBED_SRC.indexOf("const buildDraftPayload");
     const block = EMBED_SRC.slice(idx, idx + 600);
-    expect(block).toMatch(/compute_version:\s*(COMPUTE_VERSION|"10\.2\.0")/);
+    expect(block).toMatch(/compute_version:\s*COMPUTE_VERSION/);
   });
 
   it("includes deal_terms in draft payload", () => {

@@ -22,6 +22,9 @@ if (process.env.REPLIT_DOMAINS) {
 
 const nextConfig: NextConfig = {
   allowedDevOrigins: [...allowedDevHosts, "*.replit.dev", "*.repl.co"],
+  turbopack: {
+    root: __dirname,
+  },
 };
 
 export default nextConfig;

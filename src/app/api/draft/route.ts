@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
+import {
+  CONTRACT_VERSION,
+  SCHEMA_VERSION,
+  ENGINE_VERSION,
+  COMPUTE_VERSION,
+} from "@/lib/contractVersion";
 
 const FRACTPATH_APP_URL = String(
   process.env.FRACTPATH_APP_URL || "https://app.fractpath.com",
@@ -67,8 +73,8 @@ function containsFullOnlyKeys(snapshot: Record<string, unknown>): boolean {
 function createMinimalDraftSnapshot(persona: string): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
-    contract_version: "10.2.0",
-    schema_version: "1",
+    contract_version: CONTRACT_VERSION,
+    schema_version: SCHEMA_VERSION,
     created_at: now,
     persona,
     inputs: {
@@ -88,10 +94,10 @@ function buildDraftFromCanonical(
 ): Record<string, unknown> {
   const now = new Date().toISOString();
   return {
-    contract_version: cs.contract_version ?? "10.2.0",
-    schema_version: cs.schema_version ?? "1",
-    engine_version: cs.engine_version ?? "10.2.0",
-    compute_version: cs.compute_version ?? "10.2.0",
+    contract_version: cs.contract_version ?? CONTRACT_VERSION,
+    schema_version: cs.schema_version ?? SCHEMA_VERSION,
+    engine_version: cs.engine_version ?? ENGINE_VERSION,
+    compute_version: cs.compute_version ?? COMPUTE_VERSION,
     created_at: (cs.created_at as string) || now,
     computed_at: (cs.computed_at as string) || now,
     persona,

@@ -55,27 +55,21 @@ describe("FullDealSnapshotV1 canonical compliance", () => {
     expect(block).toContain('mode: "marketing"');
   });
 
-  it("builds canonical deal_terms with all required fields from FullDealSnapshotV1", () => {
+  it("buildCanonicalDealTerms passes through v11 deal_terms from widget", () => {
     expect(EMBED_SRC).toContain("function buildCanonicalDealTerms");
     const fnStart = EMBED_SRC.indexOf("function buildCanonicalDealTerms");
     const fnEnd = EMBED_SRC.indexOf("function buildCanonicalScenario");
     const fn = EMBED_SRC.slice(fnStart, fnEnd);
     expect(fn).toContain("property_value");
     expect(fn).toContain("upfront_payment");
-    expect(fn).toContain("floor_multiple");
-    expect(fn).toContain("ceiling_multiple");
-    expect(fn).toContain("downside_mode");
-    expect(fn).toContain("payback_window_start_year");
-    expect(fn).toContain("payback_window_end_year");
-    expect(fn).toContain("timing_factor_early");
-    expect(fn).toContain("timing_factor_late");
-    expect(fn).toContain("platform_fee");
-    expect(fn).toContain("servicing_fee_monthly");
-    expect(fn).toContain("exit_fee_pct");
-    expect(fn).toContain("duration_yield_floor_enabled");
     expect(fn).toContain("contract_maturity_years");
-    expect(fn).toContain("liquidity_trigger_year");
-    expect(fn).toContain("minimum_hold_years");
+    expect(fn).toContain("servicing_fee_monthly");
+    expect(fn).not.toContain("floor_multiple");
+    expect(fn).not.toContain("ceiling_multiple");
+    expect(fn).not.toContain("timing_factor_early");
+    expect(fn).not.toContain("platform_fee");
+    expect(fn).not.toContain("exit_fee_pct");
+    expect(fn).not.toContain("duration_yield_floor_enabled");
   });
 
   it("builds canonical scenario with annual_appreciation, closing_cost_pct, exit_year", () => {
@@ -252,12 +246,12 @@ describe("Save & Continue — resume navigation", () => {
 });
 
 describe("Floor/ceiling defaults (not user-collected)", () => {
-  it("uses DEAL_TERMS_DEFAULTS for floor_multiple", () => {
-    expect(EMBED_SRC).toContain("DEAL_TERMS_DEFAULTS.floor_multiple");
+  it("uses DEAL_TERMS_DEFAULTS for monthly_payment", () => {
+    expect(EMBED_SRC).toContain("DEAL_TERMS_DEFAULTS.monthly_payment");
   });
 
-  it("uses DEAL_TERMS_DEFAULTS for ceiling_multiple", () => {
-    expect(EMBED_SRC).toContain("DEAL_TERMS_DEFAULTS.ceiling_multiple");
+  it("uses DEAL_TERMS_DEFAULTS for contract_maturity_years", () => {
+    expect(EMBED_SRC).toContain("DEAL_TERMS_DEFAULTS.contract_maturity_years");
   });
 
   it("does not pass user-entered floor/ceiling overrides to mapWidgetInputsToCanonical", () => {
@@ -284,9 +278,11 @@ describe("Registration gate modal — token-based redirect", () => {
     expect(MODAL_SRC).toContain("minting");
   });
 
-  it("uses resumeUrl to build emailRedirectTo for Supabase signup, not hardcoded /dashboard", () => {
-    expect(MODAL_SRC).toContain("emailRedirectTo");
+  it("uses resumeUrl to build createAccountHref for app signup redirect", () => {
+    expect(MODAL_SRC).toContain("createAccountHref");
     expect(MODAL_SRC).toContain("resumeUrl");
+    expect(MODAL_SRC).toContain("/signup?");
+    expect(MODAL_SRC).not.toContain('"emailRedirectTo"');
     expect(MODAL_SRC).not.toContain('"/dashboard"');
   });
 
@@ -298,49 +294,46 @@ describe("Registration gate modal — token-based redirect", () => {
     expect(MODAL_SRC).toContain("save this scenario and continue in FractPath");
   });
 
-  it("disables submit when resumeUrl is not available", () => {
-    expect(MODAL_SRC).toContain("!resumeUrl");
+  it("disables create account button when resumeUrl is not available", () => {
+    expect(MODAL_SRC).toContain("resumeUrl ?");
   });
 });
 
-describe("Registration gate modal — direct Supabase signup", () => {
+describe("Registration gate modal — redirect-based account creation", () => {
   const MODAL_PATH = path.resolve("src/components/registration-gate-modal.tsx");
   const MODAL_SRC = fs.readFileSync(MODAL_PATH, "utf-8");
 
-  it("imports and uses Supabase client", () => {
-    expect(MODAL_SRC).toContain("getSupabaseClient");
-    expect(MODAL_SRC).toContain("supabase.auth.signUp");
+  it("links to app signup page via createAccountHref", () => {
+    expect(MODAL_SRC).toContain("createAccountHref");
+    expect(MODAL_SRC).toContain("/signup?");
   });
 
-  it("does NOT redirect to app signup page", () => {
-    expect(MODAL_SRC).not.toContain("/signup?");
-    expect(MODAL_SRC).not.toContain("window.location.assign");
+  it("stores persona in localStorage before navigating to signup", () => {
+    expect(MODAL_SRC).toContain("fractpath_signup_prefill");
+    expect(MODAL_SRC).toContain("JSON.stringify");
   });
 
-  it("passes role and source metadata matching app semantics", () => {
-    expect(MODAL_SRC).toContain("role: persona");
-    expect(MODAL_SRC).toContain('source: "marketing"');
+  it("does NOT do inline Supabase auth.signUp", () => {
+    expect(MODAL_SRC).not.toContain("supabase.auth.signUp");
   });
 
-  it("sets emailRedirectTo pointing to app auth callback with next param", () => {
-    expect(MODAL_SRC).toContain("/auth/callback");
-    expect(MODAL_SRC).toContain("emailRedirectTo");
-    expect(MODAL_SRC).toContain("next=");
+  it("renders persona card using PERSONA_LABELS and PERSONA_DESCRIPTIONS", () => {
+    expect(MODAL_SRC).toContain("PERSONA_LABELS");
+    expect(MODAL_SRC).toContain("PERSONA_DESCRIPTIONS");
   });
 
-  it("shows email confirmation state after successful signup", () => {
-    expect(MODAL_SRC).toContain("signupDone");
-    expect(MODAL_SRC).toContain("Check your email");
-    expect(MODAL_SRC).toContain("confirmation link");
+  it("lists key app features users can access after signup", () => {
+    expect(MODAL_SRC).toContain("Save this scenario to your account");
+    expect(MODAL_SRC).toContain("Resume directly into your draft");
   });
 
-  it("handles signup errors inline", () => {
-    expect(MODAL_SRC).toContain("signUpError");
-    expect(MODAL_SRC).toContain("setError");
-  });
-
-  it("login link includes returnTo with resumeUrl", () => {
+  it("login link includes returnTo with app URL", () => {
     expect(MODAL_SRC).toContain("/login?returnTo=");
+  });
+
+  it("does not show inline email confirmation state", () => {
+    expect(MODAL_SRC).not.toContain("signupDone");
+    expect(MODAL_SRC).not.toContain("Check your email");
   });
 });
 
@@ -400,8 +393,10 @@ describe("/api/draft endpoint", () => {
     expect(DRAFT_SRC).toContain("Valid persona required");
   });
 
-  it("validates contract_version 10.2.0", () => {
-    expect(DRAFT_SRC).toContain('"10.2.0"');
+  it("validates contract_version and schema_version are present strings", () => {
+    expect(DRAFT_SRC).toContain("contract_version");
+    expect(DRAFT_SRC).toContain("schema_version");
+    expect(DRAFT_SRC).not.toMatch(/snap\.contract_version !== "10\.2\.0"/);
   });
 
   it("uses remote mint with local fallback", () => {

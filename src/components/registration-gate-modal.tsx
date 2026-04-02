@@ -53,7 +53,7 @@ export function RegistrationGateModal({
   const helperText =
     pendingAction === "share"
       ? "Your scenario is ready. Create a free account to continue to your draft and share it securely in FractPath."
-      : "Your scenario is ready. Create a free account to save it and continue in FractPath.";
+      : "Your scenario is ready. Create a free account to save this scenario and continue in FractPath.";
 
   const createAccountHref = resumeUrl
     ? `${APP}/signup?returnTo=${encodeURIComponent(resumeUrl)}&persona=${encodeURIComponent(selectedPersona)}`

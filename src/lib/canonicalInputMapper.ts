@@ -1,34 +1,44 @@
-// Canonical compute authority:
-// fractpath-calculator-widget/docs/contracts/CANONICAL_COMPUTE_CONTRACT_V10_1.md
+// Canonical transport mapper — v11
 //
-// IMPORTANT:
-// - Do NOT hardcode compute_version in marketing.
-// - Marketing only maps + transports canonical inputs (snake_case).
-// - The compute engine (widget/app) owns compute_version and outputs.
-
-export type DownsideMode = "HARD_FLOOR" | "NO_FLOOR";
+// Marketing is a transport/embed consumer only, not a compute authority.
+// If the widget snapshot already contains canonical deal_terms and outputs,
+// transport those directly without reconstruction.
+//
+// This mapper handles minimal input validation and produces a lightweight
+// transport payload for the draft mint API.
 
 export interface CanonicalDealTerms {
   property_value: number;
   upfront_payment: number;
   monthly_payment: number;
   number_of_payments: number;
-  payback_window_start_year: number;
-  payback_window_end_year: number;
-  timing_factor_early: number;
-  timing_factor_late: number;
-  floor_multiple: number;
-  ceiling_multiple: number;
-  downside_mode: DownsideMode;
   contract_maturity_years: number;
-  liquidity_trigger_year: number;
-  minimum_hold_years: number;
-  platform_fee: number;
-  servicing_fee_monthly: number;
-  exit_fee_pct: number;
-  duration_yield_floor_enabled: boolean;
-  duration_yield_floor_start_year?: number;
-  duration_yield_floor_min_multiple?: number;
+  servicing_fee_monthly?: number;
+  // v11 fee fields (present when widget emits them)
+  setup_fee_pct?: number;
+  setup_fee_floor?: number;
+  setup_fee_cap?: number;
+  payment_admin_fee?: number;
+  exit_admin_fee_amount?: number;
+  // v11 timeline fields
+  target_exit_year?: number;
+  target_exit_window_start_year?: number;
+  target_exit_window_end_year?: number;
+  long_stop_year?: number;
+  first_extension_start_year?: number;
+  first_extension_end_year?: number;
+  first_extension_premium_pct?: number;
+  second_extension_start_year?: number;
+  second_extension_end_year?: number;
+  second_extension_premium_pct?: number;
+  // v11 partial buyout
+  partial_buyout_allowed?: boolean;
+  partial_buyout_min_fraction?: number;
+  partial_buyout_increment_fraction?: number;
+  // v11 buyer purchase option
+  buyer_purchase_option_enabled?: boolean;
+  buyer_purchase_notice_days?: number;
+  buyer_purchase_closing_days?: number;
 }
 
 export interface CanonicalScenarioAssumptions {
@@ -56,25 +66,13 @@ export interface MapperSuccess {
 
 export type MapperResult = MapperSuccess | MapperError;
 
-// Marketing defaults only: these are NOT the compute engine outputs.
-// Keep all defaults centralized here to prevent drift.
+// Minimal transport defaults — not the compute engine's authority.
+// Only fields used for transport payload when widget inputs are the source.
 export const DEAL_TERMS_DEFAULTS = {
   monthly_payment: 0,
   number_of_payments: 0,
-  payback_window_start_year: 3,
-  payback_window_end_year: 7,
-  timing_factor_early: 0.85,
-  timing_factor_late: 1.15,
-  floor_multiple: 0.8,
-  ceiling_multiple: 2.0,
-  downside_mode: "HARD_FLOOR" as DownsideMode,
   contract_maturity_years: 5,
-  liquidity_trigger_year: 1,
-  minimum_hold_years: 1,
-  platform_fee: 0,
   servicing_fee_monthly: 0,
-  exit_fee_pct: 0,
-  duration_yield_floor_enabled: false,
 } as const;
 
 export const SCENARIO_DEFAULTS = {
@@ -100,13 +98,7 @@ function finitePositive(v: unknown, field: string): MapperError | null {
   return null;
 }
 
-export function mapWidgetInputsToCanonical(
-  inputs: WidgetInputs,
-  overrides?: {
-    floor_multiple?: number;
-    ceiling_multiple?: number;
-  },
-): MapperResult {
+export function mapWidgetInputsToCanonical(inputs: WidgetInputs): MapperResult {
   let err: MapperError | null;
 
   err = finitePositive(inputs.homeValue, "homeValue");
@@ -129,44 +121,13 @@ export function mapWidgetInputsToCanonical(
     };
   }
 
-  const floor = overrides?.floor_multiple ?? DEAL_TERMS_DEFAULTS.floor_multiple;
-  const ceiling =
-    overrides?.ceiling_multiple ?? DEAL_TERMS_DEFAULTS.ceiling_multiple;
-
-  err = finitePositive(floor, "floor_multiple");
-  if (err) return err;
-
-  err = finitePositive(ceiling, "ceiling_multiple");
-  if (err) return err;
-
-  if (floor > ceiling) {
-    return {
-      ok: false,
-      field: "floor_multiple",
-      message: "floor_multiple must not exceed ceiling_multiple",
-    };
-  }
-
   const deal_terms: CanonicalDealTerms = {
     property_value: inputs.homeValue,
     upfront_payment: inputs.initialBuyAmount,
     monthly_payment: DEAL_TERMS_DEFAULTS.monthly_payment,
     number_of_payments: DEAL_TERMS_DEFAULTS.number_of_payments,
-    payback_window_start_year: DEAL_TERMS_DEFAULTS.payback_window_start_year,
-    payback_window_end_year: DEAL_TERMS_DEFAULTS.payback_window_end_year,
-    timing_factor_early: DEAL_TERMS_DEFAULTS.timing_factor_early,
-    timing_factor_late: DEAL_TERMS_DEFAULTS.timing_factor_late,
-    floor_multiple: floor,
-    ceiling_multiple: ceiling,
-    downside_mode: DEAL_TERMS_DEFAULTS.downside_mode,
     contract_maturity_years: inputs.termYears,
-    liquidity_trigger_year: DEAL_TERMS_DEFAULTS.liquidity_trigger_year,
-    minimum_hold_years: DEAL_TERMS_DEFAULTS.minimum_hold_years,
-    platform_fee: DEAL_TERMS_DEFAULTS.platform_fee,
     servicing_fee_monthly: DEAL_TERMS_DEFAULTS.servicing_fee_monthly,
-    exit_fee_pct: DEAL_TERMS_DEFAULTS.exit_fee_pct,
-    duration_yield_floor_enabled:
-      DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
   };
 
   const scenario: CanonicalScenarioAssumptions = {
@@ -178,17 +139,10 @@ export function mapWidgetInputsToCanonical(
   return { ok: true, data: { deal_terms, scenario } };
 }
 
-export function extractDealTermsDefaultsUsed(overrides?: {
-  floor_multiple?: number;
-  ceiling_multiple?: number;
-}): Record<string, unknown> {
+/** @deprecated Use mapWidgetInputsToCanonical. Kept for legacy call-sites. */
+export function extractDealTermsDefaultsUsed(): Record<string, unknown> {
   return {
-    floor_multiple:
-      overrides?.floor_multiple ?? DEAL_TERMS_DEFAULTS.floor_multiple,
-    ceiling_multiple:
-      overrides?.ceiling_multiple ?? DEAL_TERMS_DEFAULTS.ceiling_multiple,
-    downside_mode: DEAL_TERMS_DEFAULTS.downside_mode,
     contract_maturity_years: DEAL_TERMS_DEFAULTS.contract_maturity_years,
-    source: "canonical_mapper_v10.1",
+    source: "canonical_mapper_v11",
   };
 }

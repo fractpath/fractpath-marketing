@@ -270,9 +270,14 @@ export async function POST(request: NextRequest) {
     );
 
   const snap = draftSnapshot as Record<string, unknown>;
-  if (snap.contract_version !== "10.2.0" || snap.schema_version !== "1") {
+  if (
+    typeof snap.contract_version !== "string" ||
+    !snap.contract_version ||
+    typeof snap.schema_version !== "string" ||
+    !snap.schema_version
+  ) {
     return NextResponse.json(
-      { error: "Expected canonical snapshot 10.2.0 / schema 1" },
+      { error: "snapshot must include non-empty contract_version and schema_version strings" },
       { status: 422 },
     );
   }

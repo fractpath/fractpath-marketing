@@ -91,46 +91,11 @@ function isFullDealSnapshot(snap: WidgetSnapshot): snap is FullDealSnapshotV1 {
 function buildCanonicalDealTerms(
   snap: WidgetSnapshot,
 ): Record<string, unknown> {
+  // v11: widget is the canonical source — pass deal_terms through directly
   if (isFullDealSnapshot(snap) && snap.deal_terms) {
-    return {
-      property_value: snap.deal_terms.property_value,
-      upfront_payment: snap.deal_terms.upfront_payment,
-      monthly_payment:
-        snap.deal_terms.monthly_payment ?? DEAL_TERMS_DEFAULTS.monthly_payment,
-      number_of_payments:
-        snap.deal_terms.number_of_payments ??
-        DEAL_TERMS_DEFAULTS.number_of_payments,
-      payback_window_start_year: DEAL_TERMS_DEFAULTS.payback_window_start_year,
-      payback_window_end_year: DEAL_TERMS_DEFAULTS.payback_window_end_year,
-      timing_factor_early: DEAL_TERMS_DEFAULTS.timing_factor_early,
-      timing_factor_late: DEAL_TERMS_DEFAULTS.timing_factor_late,
-      floor_multiple:
-        snap.deal_terms.floor_multiple ?? DEAL_TERMS_DEFAULTS.floor_multiple,
-      ceiling_multiple:
-        snap.deal_terms.ceiling_multiple ??
-        DEAL_TERMS_DEFAULTS.ceiling_multiple,
-      downside_mode:
-        snap.deal_terms.downside_mode ?? DEAL_TERMS_DEFAULTS.downside_mode,
-      contract_maturity_years:
-        snap.deal_terms.contract_maturity_years ??
-        DEAL_TERMS_DEFAULTS.contract_maturity_years,
-      liquidity_trigger_year:
-        snap.deal_terms.liquidity_trigger_year ??
-        DEAL_TERMS_DEFAULTS.liquidity_trigger_year,
-      minimum_hold_years:
-        snap.deal_terms.minimum_hold_years ??
-        DEAL_TERMS_DEFAULTS.minimum_hold_years,
-      platform_fee:
-        snap.deal_terms.platform_fee ?? DEAL_TERMS_DEFAULTS.platform_fee,
-      servicing_fee_monthly:
-        snap.deal_terms.servicing_fee_monthly ??
-        DEAL_TERMS_DEFAULTS.servicing_fee_monthly,
-      exit_fee_pct:
-        snap.deal_terms.exit_fee_pct ?? DEAL_TERMS_DEFAULTS.exit_fee_pct,
-      duration_yield_floor_enabled:
-        DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
-    };
+    return snap.deal_terms as Record<string, unknown>;
   }
+  // Fallback: build minimal deal_terms from basic widget inputs
   if ("inputs" in snap && snap.inputs) {
     const inp = snap.inputs;
     return {
@@ -138,22 +103,9 @@ function buildCanonicalDealTerms(
       upfront_payment: inp.initialBuyAmount,
       monthly_payment: DEAL_TERMS_DEFAULTS.monthly_payment,
       number_of_payments: DEAL_TERMS_DEFAULTS.number_of_payments,
-      payback_window_start_year: DEAL_TERMS_DEFAULTS.payback_window_start_year,
-      payback_window_end_year: DEAL_TERMS_DEFAULTS.payback_window_end_year,
-      timing_factor_early: DEAL_TERMS_DEFAULTS.timing_factor_early,
-      timing_factor_late: DEAL_TERMS_DEFAULTS.timing_factor_late,
-      floor_multiple: DEAL_TERMS_DEFAULTS.floor_multiple,
-      ceiling_multiple: DEAL_TERMS_DEFAULTS.ceiling_multiple,
-      downside_mode: DEAL_TERMS_DEFAULTS.downside_mode,
       contract_maturity_years:
         inp.termYears ?? DEAL_TERMS_DEFAULTS.contract_maturity_years,
-      liquidity_trigger_year: DEAL_TERMS_DEFAULTS.liquidity_trigger_year,
-      minimum_hold_years: DEAL_TERMS_DEFAULTS.minimum_hold_years,
-      platform_fee: DEAL_TERMS_DEFAULTS.platform_fee,
       servicing_fee_monthly: DEAL_TERMS_DEFAULTS.servicing_fee_monthly,
-      exit_fee_pct: DEAL_TERMS_DEFAULTS.exit_fee_pct,
-      duration_yield_floor_enabled:
-        DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
     };
   }
   return {
@@ -161,21 +113,8 @@ function buildCanonicalDealTerms(
     upfront_payment: 100000,
     monthly_payment: DEAL_TERMS_DEFAULTS.monthly_payment,
     number_of_payments: DEAL_TERMS_DEFAULTS.number_of_payments,
-    payback_window_start_year: DEAL_TERMS_DEFAULTS.payback_window_start_year,
-    payback_window_end_year: DEAL_TERMS_DEFAULTS.payback_window_end_year,
-    timing_factor_early: DEAL_TERMS_DEFAULTS.timing_factor_early,
-    timing_factor_late: DEAL_TERMS_DEFAULTS.timing_factor_late,
-    floor_multiple: DEAL_TERMS_DEFAULTS.floor_multiple,
-    ceiling_multiple: DEAL_TERMS_DEFAULTS.ceiling_multiple,
-    downside_mode: DEAL_TERMS_DEFAULTS.downside_mode,
     contract_maturity_years: DEAL_TERMS_DEFAULTS.contract_maturity_years,
-    liquidity_trigger_year: DEAL_TERMS_DEFAULTS.liquidity_trigger_year,
-    minimum_hold_years: DEAL_TERMS_DEFAULTS.minimum_hold_years,
-    platform_fee: DEAL_TERMS_DEFAULTS.platform_fee,
     servicing_fee_monthly: DEAL_TERMS_DEFAULTS.servicing_fee_monthly,
-    exit_fee_pct: DEAL_TERMS_DEFAULTS.exit_fee_pct,
-    duration_yield_floor_enabled:
-      DEAL_TERMS_DEFAULTS.duration_yield_floor_enabled,
   };
 }
 

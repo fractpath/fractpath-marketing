@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { Container } from "./container";
 import { Menu, X } from "lucide-react";
 import { trackCustomEvent } from "@/lib/analytics";
 import { getAppBaseUrlClient } from "@/lib/appBaseUrl";
+import { GenericRegisterButton } from "@/components/generic-register-modal";
 
 const navLinks = [
-  { label: "How It Works", href: "#how-it-works" },
+  { label: "How It Works", href: "#product-section" },
   { label: "FAQ", href: "#faq" },
-  { label: "Realtor Beta", href: "#realtor-beta" },
+  { label: "Realtors", href: "#realtor-section" },
 ];
 
 export function TopNav() {
@@ -47,19 +47,14 @@ export function TopNav() {
               href={`${APP}/login`}
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
-              Login
+              Log in
             </a>
 
-            <Button asChild size="sm">
-              <a
-                href={`${APP}/signup`}
-                onClick={() =>
-                  trackCustomEvent("cta_signup_clicked", { location: "nav" })
-                }
-              >
-                Sign up
-              </a>
-            </Button>
+            <GenericRegisterButton
+              className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Register
+            </GenericRegisterButton>
           </div>
 
           <button
@@ -92,20 +87,16 @@ export function TopNav() {
               <a
                 href={`${APP}/login`}
                 className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setMobileOpen(false)}
               >
-                Login
+                Log in
               </a>
 
-              <Button asChild size="sm" className="w-fit">
-                <a
-                  href={`${APP}/signup`}
-                  onClick={() =>
-                    trackCustomEvent("cta_signup_clicked", { location: "nav" })
-                  }
-                >
-                  Sign up
-                </a>
-              </Button>
+              <GenericRegisterButton
+                className="inline-flex w-fit items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90"
+              >
+                Register
+              </GenericRegisterButton>
             </div>
           </div>
         )}

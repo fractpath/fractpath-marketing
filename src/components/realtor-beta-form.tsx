@@ -115,11 +115,11 @@ export function RealtorBetaForm() {
       )}
 
       <Button type="submit" className="w-full" disabled={submitting}>
-        {submitting ? "Submitting..." : "Request Early Access"}
+        {submitting ? "Submitting..." : "Request Realtor Consultation"}
       </Button>
 
       <p className="text-center text-xs text-muted-foreground">
-        We&apos;ll only contact you about the FractPath Realtor Beta program.
+        We&apos;ll only contact you about FractPath realtor opportunities.
       </p>
     </form>
   );

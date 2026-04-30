@@ -5,10 +5,8 @@ import { GenericRegisterButton } from "@/components/generic-register-modal";
 
 export function HeroCta() {
   return (
-    <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap">
-      <GenericRegisterButton
-        className="inline-flex h-11 items-center justify-center rounded-md bg-primary px-6 text-sm font-semibold text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
+    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+      <GenericRegisterButton className="inline-flex h-11 items-center justify-center rounded-md bg-[#18181B] px-7 text-sm font-semibold text-white shadow transition-all duration-150 hover:scale-[1.02] hover:bg-[#27272A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#18181B]">
         Register
       </GenericRegisterButton>
 
@@ -17,19 +15,19 @@ export function HeroCta() {
         onClick={() =>
           trackCustomEvent("cta_model_clicked", { location: "hero" })
         }
-        className="inline-flex h-11 items-center justify-center rounded-md border border-input bg-background px-6 text-sm font-semibold shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
+        className="inline-flex h-11 items-center justify-center rounded-md border border-[#E4E4E7] bg-white px-7 text-sm font-semibold text-[#18181B] transition-all duration-150 hover:scale-[1.02] hover:border-[#A1A1AA]"
       >
         Model a Scenario
       </a>
 
       <a
         href="#realtor-section"
-        className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+        className="text-sm font-medium text-[#71717A] transition-colors hover:text-[#18181B]"
         onClick={() =>
           trackCustomEvent("cta_realtor_link_clicked", { location: "hero" })
         }
       >
-        Realtor? Learn how FractPath can help your clients →
+        Realtor? Learn how FractPath can help →
       </a>
     </div>
   );

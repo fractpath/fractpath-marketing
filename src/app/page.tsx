@@ -48,7 +48,7 @@ type ComparisonRow = {
 
 const COMPARISON_ROWS: ComparisonRow[] = [
   {
-    feature: "Access cash today",
+    feature: "Cash today",
     fractpath: "✔  Yes",
     mortgage: "Yes",
     heloc: "Yes",
@@ -57,18 +57,9 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     rto: "✕  No",
     fractpathColor: "green",
   },
+
   {
-    feature: "New monthly payment",
-    fractpath: "✔  No / flexible",
-    mortgage: "Usually",
-    heloc: "Often",
-    second: "Yes",
-    reverse: "Usually no",
-    rto: "Yes",
-    fractpathColor: "green",
-  },
-  {
-    feature: "Interest charges",
+    feature: "Monthly interest",
     fractpath: "✔  No",
     mortgage: "Yes",
     heloc: "Yes",
@@ -88,7 +79,7 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     fractpathColor: "green",
   },
   {
-    feature: "Buyer can participate",
+    feature: "Buyer participates",
     fractpath: "✔  Yes",
     mortgage: "✕  No",
     heloc: "✕  No",
@@ -98,7 +89,7 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     fractpathColor: "green",
   },
   {
-    feature: "Terms can be negotiated",
+    feature: "Negotiated terms",
     fractpath: "✔  Yes",
     mortgage: "–  Limited",
     heloc: "–  Limited",
@@ -108,25 +99,16 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     fractpathColor: "green",
   },
   {
-    feature: "Path to future purchase",
-    fractpath: "–  Possible",
+    feature: "Path to ownership",
+    fractpath: "✔  Yes",
     mortgage: "✕  No",
     heloc: "✕  No",
     second: "✕  No",
     reverse: "✕  No",
     rto: "Yes",
-    fractpathColor: "gold",
+    fractpathColor: "green",
   },
-  {
-    feature: "Best fit",
-    fractpath: "Flexible equity deal",
-    mortgage: "Replace main mortgage",
-    heloc: "Credit line",
-    second: "Additional loan",
-    reverse: "Older homeowners",
-    rto: "Lease-to-buy",
-    fractpathColor: "neutral",
-  },
+
 ];
 
 const HOMEOWNER_BULLETS = [
@@ -190,11 +172,50 @@ const REALTOR_BULLETS = [
 
 /* ─── Helpers ─────────────────────────────────────────────────────────── */
 
-function fpCellClass(color?: StoplightValue): string {
-  if (color === "green") return "text-[#16A34A] font-medium";
-  if (color === "gold") return "text-[#CA8A04] font-medium";
-  if (color === "red") return "text-[#DC2626]";
-  return "text-[#18181B]";
+function comparisonCellClass(feature: string, value: string): string {
+  const normalized = value.toLowerCase();
+  const downsideRows = ["Monthly interest"];
+
+  if (feature === "Best fit") {
+    return "bg-white text-[#18181B]";
+  }
+
+  if (downsideRows.includes(feature)) {
+    if (normalized.includes("no") || normalized.includes("flexible")) {
+      return "bg-green-50 text-[#16A34A] font-semibold";
+    }
+
+    if (
+      normalized.includes("usually") ||
+      normalized.includes("often") ||
+      normalized.includes("varies") ||
+      normalized.includes("fees")
+    ) {
+      return "bg-yellow-50 text-[#CA8A04] font-semibold";
+    }
+
+    return "bg-red-50 text-[#DC2626] font-semibold";
+  }
+
+  if (normalized.includes("yes")) {
+    return "bg-green-50 text-[#16A34A] font-semibold";
+  }
+
+  if (
+    normalized.includes("possible") ||
+    normalized.includes("limited") ||
+    normalized.includes("often") ||
+    normalized.includes("usually") ||
+    normalized.includes("varies")
+  ) {
+    return "bg-yellow-50 text-[#CA8A04] font-semibold";
+  }
+
+  if (normalized.includes("no")) {
+    return "bg-red-50 text-[#DC2626] font-semibold";
+  }
+
+  return "bg-white text-[#71717A]";
 }
 
 /* ─── Page ────────────────────────────────────────────────────────────── */
@@ -204,83 +225,43 @@ export default function HomePage() {
     <div id="top" className="min-h-screen bg-white">
       <TopNav />
 
-      {/* ── 1. HERO ─ white ────────────────────────────────────────────── */}
-      <section
-        className="relative overflow-hidden bg-white"
-        style={{ minHeight: "600px" }}
-      >
-        {/* Desktop: full-bleed image absolutely on right */}
-        <div
-          className="absolute inset-y-0 right-0 hidden lg:block"
-          style={{ width: "52%" }}
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand/media/image 1.png"
-            alt="Modern residential home representing a flexible path to home equity and ownership"
-            className="h-full w-full object-cover"
-            style={{ borderRadius: "32px 0 0 32px" }}
-          />
-          {/* Left-edge gradient blending with white page */}
-          <div
-            className="pointer-events-none absolute inset-y-0 left-0 w-32"
-            style={{
-              background:
-                "linear-gradient(to right, rgba(255,255,255,0.85), transparent)",
-            }}
-          />
-        </div>
+    <section className="relative overflow-hidden bg-white" style={{ minHeight: "600px" }}>
+      <div className="absolute inset-0">
+        <img
+          src="/brand/media/hero-home-gradient.png"
+          alt="Modern residential home representing a flexible path to home equity and ownership"
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-white/78 lg:bg-white/0" />
+        <div className="absolute inset-0 hidden lg:block bg-gradient-to-r from-white via-white/90 to-transparent" />
+      </div>
 
-        {/* Text — left half */}
-        <div className="relative z-10">
-          <Container>
-            <div className="py-24 lg:py-36" style={{ maxWidth: "560px" }}>
-              <p className="mb-5 text-xs font-semibold uppercase tracking-[0.18em] text-[#CA8A04]">
-                Home Appreciation Agreements
-              </p>
-              <h1
-                className="text-4xl font-bold leading-[1.08] tracking-[-0.02em] text-[#18181B] sm:text-5xl lg:text-[56px]"
-              >
-                A new path for homeowners and buyers to structure home equity
-                deals together.
-              </h1>
-              <p className="mt-6 max-w-[520px] text-lg leading-[1.6] text-[#71717A]">
-                FractPath helps people negotiate Home Appreciation Agreements
-                &mdash; flexible contracts tied to a home&apos;s future value,
-                without a traditional loan.
-              </p>
-              <HeroCta />
+      <div className="relative z-10">
+        <Container>
+          <div className="py-24 lg:py-36" style={{ maxWidth: "560px" }}>
+            <p className="mb-5 text-xs font-semibold uppercase tracking-[0.18em] text-[#CA8A04]">
+              Home Appreciation Agreements
+            </p>
+            <h1 className="text-4xl font-bold leading-[1.08] tracking-[-0.02em] text-[#18181B] sm:text-5xl lg:text-[56px]">
+              A new path for homeowners and buyers to structure home equity deals together.
+            </h1>
+            <p className="mt-6 max-w-[520px] text-lg leading-[1.6] text-[#71717A]">
+              FractPath helps people negotiate Home Appreciation Agreements &mdash; flexible contracts tied to a home&apos;s future value, without a traditional loan.
+            </p>
+            <HeroCta />
 
-              {/* Trust strip */}
-              <div className="mt-10 flex flex-wrap gap-x-5 gap-y-2">
-                {TRUST_ITEMS.map((item) => (
-                  <span
-                    key={item}
-                    className="flex items-center gap-1.5 text-xs font-medium text-[#71717A]"
-                  >
-                    <span
-                      className="h-1.5 w-1.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: "#16A34A" }}
-                    />
-                    {item}
-                  </span>
-                ))}
-              </div>
+            <div className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {TRUST_ITEMS.map((item) => (
+                <div key={item} className="flex items-center gap-2 text-sm font-medium text-[#18181B]">
+                  <span style={{ color: "#16A34A" }}>✔</span>
+                  {item}
+                </div>
+              ))}
             </div>
-          </Container>
-        </div>
-
-        {/* Mobile: image below text */}
-        <div className="lg:hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand/media/image 1.png"
-            alt="Modern residential home representing a flexible path to home equity and ownership"
-            className="w-full object-cover"
-            style={{ maxHeight: "300px", filter: "saturate(0.9)" }}
-          />
-        </div>
-      </section>
+          </div>
+        </Container>
+      </div>
+    </section>
 
       {/* ── 2. MERGED HEA + TABLE ─ neutral-50 ────────────────────────── */}
       <section className="py-20 sm:py-28" style={{ backgroundColor: "#FAFAFA" }}>
@@ -319,60 +300,92 @@ export default function HomePage() {
           </div>
 
           {/* Comparison table */}
-          <div className="overflow-x-auto rounded-2xl border border-[#E4E4E7] bg-white">
-            <table className="w-full min-w-[720px] border-collapse text-sm">
+          <div className="overflow-x-auto rounded-2xl border border-[#E4E4E7] bg-white shadow-sm">
+            <table className="w-full min-w-[860px] border-collapse text-sm">
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-20 min-w-[148px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#71717A]">
+                  <th className="sticky left-0 z-30 min-w-[132px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#71717A]">
                     Feature
                   </th>
-                  <th className="sticky left-[148px] z-20 min-w-[136px] bg-[#18181B] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-white">
+                  <th className="sticky left-[132px] z-30 min-w-[132px] bg-[#18181B] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-white">
                     FractPath HEA
                   </th>
-                  <th className="min-w-[124px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
+                  <th className="min-w-[140px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
                     Mortgage refi
                   </th>
-                  <th className="min-w-[96px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
+                  <th className="min-w-[112px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
                     HELOC
                   </th>
-                  <th className="min-w-[120px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
+                  <th className="min-w-[132px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
                     2nd mortgage
                   </th>
-                  <th className="min-w-[130px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
+                  <th className="min-w-[148px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
                     Reverse mortgage
                   </th>
-                  <th className="min-w-[108px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
+                  <th className="min-w-[124px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
                     Rent-to-own
                   </th>
                 </tr>
               </thead>
+
               <tbody>
-                {COMPARISON_ROWS.map((row, i) => (
-                  <tr
-                    key={row.feature}
-                    className={i % 2 === 0 ? "bg-white" : "bg-[#FAFAFA]"}
-                  >
-                    <td className="sticky left-0 z-10 min-w-[148px] border-t border-[#E4E4E7] bg-inherit px-5 py-3.5 font-medium text-[#18181B]">
+                {COMPARISON_ROWS.map((row) => (
+                  <tr key={row.feature}>
+                    <td className="sticky left-0 z-20 min-w-[132px] border-t border-[#E4E4E7] bg-white px-5 py-3.5 font-medium text-[#18181B]">
                       {row.feature}
                     </td>
+
                     <td
-                      className={`sticky left-[148px] z-10 min-w-[136px] border-t border-[#E4E4E7] bg-white px-5 py-3.5 ${fpCellClass(row.fractpathColor)}`}
+                      className={`sticky left-[132px] z-20 min-w-[132px] border-t border-[#E4E4E7] px-5 py-3.5 ${comparisonCellClass(
+                        row.feature,
+                        row.fractpath,
+                      )}`}
                     >
                       {row.fractpath}
                     </td>
-                    <td className="min-w-[124px] border-t border-[#E4E4E7] px-5 py-3.5 text-[#71717A]">
+
+                    <td
+                      className={`min-w-[140px] border-t border-[#E4E4E7] px-5 py-3.5 ${comparisonCellClass(
+                        row.feature,
+                        row.mortgage,
+                      )}`}
+                    >
                       {row.mortgage}
                     </td>
-                    <td className="min-w-[96px] border-t border-[#E4E4E7] px-5 py-3.5 text-[#71717A]">
+
+                    <td
+                      className={`min-w-[112px] border-t border-[#E4E4E7] px-5 py-3.5 ${comparisonCellClass(
+                        row.feature,
+                        row.heloc,
+                      )}`}
+                    >
                       {row.heloc}
                     </td>
-                    <td className="min-w-[120px] border-t border-[#E4E4E7] px-5 py-3.5 text-[#71717A]">
+
+                    <td
+                      className={`min-w-[132px] border-t border-[#E4E4E7] px-5 py-3.5 ${comparisonCellClass(
+                        row.feature,
+                        row.second,
+                      )}`}
+                    >
                       {row.second}
                     </td>
-                    <td className="min-w-[130px] border-t border-[#E4E4E7] px-5 py-3.5 text-[#71717A]">
+
+                    <td
+                      className={`min-w-[148px] border-t border-[#E4E4E7] px-5 py-3.5 ${comparisonCellClass(
+                        row.feature,
+                        row.reverse,
+                      )}`}
+                    >
                       {row.reverse}
                     </td>
-                    <td className="min-w-[108px] border-t border-[#E4E4E7] px-5 py-3.5 text-[#71717A]">
+
+                    <td
+                      className={`min-w-[124px] border-t border-[#E4E4E7] px-5 py-3.5 ${comparisonCellClass(
+                        row.feature,
+                        row.rto,
+                      )}`}
+                    >
                       {row.rto}
                     </td>
                   </tr>
@@ -408,8 +421,8 @@ export default function HomePage() {
                 <div className="w-full lg:w-[60%]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/brand/media/ChatGPT Image Apr 30, 2026, 08_12_15 AM (2).png"
-                    alt="Homeowner relaxing in a bright living room while reviewing flexible home equity options"
+                    src="/brand/media/homeowner-emotional.png"
+                    alt="Homeowner struggling to finance their bills"
                     className="w-full object-cover transition-transform duration-300 hover:scale-[1.01]"
                     style={{
                       aspectRatio: "4/3",
@@ -452,8 +465,8 @@ export default function HomePage() {
                 <div className="w-full lg:w-[60%]">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src="/brand/media/ChatGPT Image Apr 30, 2026, 08_12_15 AM (1).png"
-                    alt="Prospective homebuyers reviewing a future home opportunity together"
+                    src="/brand/media/buyer-emotional.png"
+                    alt="Prospective homebuyers struggling to afford rising home costs"
                     className="w-full object-cover transition-transform duration-300 hover:scale-[1.01]"
                     style={{
                       aspectRatio: "4/3",
@@ -494,23 +507,13 @@ export default function HomePage() {
       </section>
 
       {/* ── 4. CALCULATOR ─ neutral-50 ─────────────────────────────────── */}
-      <section
-        className="pt-20 sm:pt-28"
-        style={{ backgroundColor: "#FAFAFA" }}
-      >
-        <Container>
-          <div className="mb-12">
-            <h2 className="text-3xl font-bold tracking-[-0.02em] text-[#18181B] sm:text-4xl">
-              Model a scenario before you register.
-            </h2>
-            <p className="mt-4 max-w-xl text-base leading-relaxed text-[#71717A]">
-              Use the calculator to explore how a FractPath HEA could work.
-              Save your scenario when you&apos;re ready to continue.
-            </p>
-          </div>
-        </Container>
-        <PersonaPageContent />
-      </section>
+    <section
+      id="calculator"
+      className="pt-20 sm:pt-28"
+      style={{ backgroundColor: "#FAFAFA" }}
+    >
+      <PersonaPageContent />
+    </section>
 
       {/* ── 5. PRODUCT SECTION ─ white ─────────────────────────────────── */}
       <section id="product-section" className="py-20 sm:py-28 bg-white">
@@ -529,18 +532,17 @@ export default function HomePage() {
             {PRODUCT_STEPS.map((step, i) => (
               <ScrollFade key={step.title} delay={i * 80}>
                 <div className="group h-full overflow-hidden rounded-[20px] border border-[#E4E4E7] bg-white transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
-                  <div className="overflow-hidden bg-[#F4F4F5] p-4 pb-0">
+                      <div className="overflow-hidden bg-white p-4">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={step.image}
                       alt={step.title}
-                      className="w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]"
-                      style={{ maxHeight: "220px" }}
+                      className="h-auto w-full object-contain transition-transform duration-300 group-hover:scale-[1.02]"
                     />
                   </div>
                   <div className="p-5">
                     <h3 className="mb-1 text-base font-semibold text-[#18181B]">
-                      {step.title}
+                      {i + 1}. {step.title}
                     </h3>
                     <p className="text-sm leading-relaxed text-[#71717A]">
                       {step.body}
@@ -573,10 +575,11 @@ export default function HomePage() {
           <div className="grid gap-10 sm:grid-cols-3">
             {TRUST_ITEMS_SECTION.map((item) => (
               <div key={item.title}>
-                <div
-                  className="mb-3 h-1 w-8 rounded-full"
-                  style={{ backgroundColor: "#18181B" }}
-                />
+                <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[#F4F4F5] text-[#18181B]">
+                  {item.title === "Clear terms" && "📄"}
+                  {item.title === "Manual review" && "🔍"}
+                  {item.title === "Partner-supported" && "🤝"}
+                </div>
                 <h3 className="mb-2 text-lg font-semibold text-[#18181B]">
                   {item.title}
                 </h3>

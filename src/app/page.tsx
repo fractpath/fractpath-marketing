@@ -304,10 +304,9 @@ export default function HomePage() {
             <table className="w-full min-w-[860px] border-collapse text-sm">
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-30 min-w-[132px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#71717A]">
+                  <th className="sticky left-0 z-30 w-[115px] min-w-[115px] bg-[#F4F4F5] px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-[#71717A]">
                     Feature
-                  </th>
-                  <th className="sticky left-[132px] z-30 min-w-[132px] bg-[#18181B] px-5 py-4 text-left text-xs font-semibold uppercase tracking-wide text-white">
+                  </th><th className="sticky left-[117px] z-30 min-w-[115px] bg-[#18181B] px-4 py-4 text-left text-xs font-semibold uppercase tracking-wide text-white">
                     FractPath HEA
                   </th>
                   <th className="min-w-[140px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
@@ -316,7 +315,7 @@ export default function HomePage() {
                   <th className="min-w-[112px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
                     HELOC
                   </th>
-                  <th className="min-w-[132px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
+                  <th className="min-w-[115px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
                     2nd mortgage
                   </th>
                   <th className="min-w-[148px] bg-[#F4F4F5] px-5 py-4 text-left text-xs font-medium text-[#71717A]">
@@ -331,12 +330,12 @@ export default function HomePage() {
               <tbody>
                 {COMPARISON_ROWS.map((row) => (
                   <tr key={row.feature}>
-                    <td className="sticky left-0 z-20 min-w-[132px] border-t border-[#E4E4E7] bg-white px-5 py-3.5 font-medium text-[#18181B]">
+                    <td className="sticky left-0 z-20 w-[115px] min-w-[115px] border-t border-[#E4E4E7] bg-white px-4 py-3.5 font-medium text-[#18181B]">
                       {row.feature}
                     </td>
 
                     <td
-                      className={`sticky left-[132px] z-20 min-w-[132px] border-t border-[#E4E4E7] px-5 py-3.5 ${comparisonCellClass(
+                      className={`sticky left-[117px] z-20 min-w-[115px] border-t border-[#E4E4E7] px-4 py-3.5 ${comparisonCellClass(
                         row.feature,
                         row.fractpath,
                       )}`}
@@ -363,7 +362,7 @@ export default function HomePage() {
                     </td>
 
                     <td
-                      className={`min-w-[132px] border-t border-[#E4E4E7] px-5 py-3.5 ${comparisonCellClass(
+                      className={`min-w-[115px] border-t border-[#E4E4E7] px-5 py-3.5 ${comparisonCellClass(
                         row.feature,
                         row.second,
                       )}`}

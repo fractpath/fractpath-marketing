@@ -24,8 +24,8 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       fractpath-calculator-widget:
-        specifier: git+https://github.com/fractpath/fractpath-calculator-widget.git#c337b8289a370bf8474a68ff7183d6c67fe1fa61
-        version: https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/c337b8289a370bf8474a68ff7183d6c67fe1fa61(@types/node@20.19.37)(vite@8.0.3(@emnapi/core@1.8.1)(@emnapi/runtime@1.8.1)(@types/node@20.19.37)(jiti@2.6.1))
+        specifier: github:fractpath/fractpath-calculator-widget#59cc56dbe2cc7311ca9f8b6437b3aefa93c9be9c
+        version: https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/59cc56dbe2cc7311ca9f8b6437b3aefa93c9be9c(@types/node@20.19.37)(vite@8.0.3(@emnapi/core@1.8.1)(@emnapi/runtime@1.8.1)(@types/node@20.19.37)(jiti@2.6.1))
       lucide-react:
         specifier: ^0.563.0
         version: 0.563.0(react@19.2.3)
@@ -335,9 +335,6 @@ packages:
 
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
-
-  '@fractpath/compute@file:packages/compute':
-    resolution: {directory: packages/compute, type: directory}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -2372,9 +2369,9 @@ packages:
     resolution: {integrity: sha512-buewHzMvYL29jdeQTVILecSaZKnt/RJWjoZCF5OW60Z67/GmSLBkOFM7qh1PI3zFNtJbaZL5eQu1vLfazOwj4g==}
     engines: {node: '>=12.20.0'}
 
-  fractpath-calculator-widget@https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/c337b8289a370bf8474a68ff7183d6c67fe1fa61:
-    resolution: {tarball: https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/c337b8289a370bf8474a68ff7183d6c67fe1fa61}
-    version: 1.0.0
+  fractpath-calculator-widget@https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/59cc56dbe2cc7311ca9f8b6437b3aefa93c9be9c:
+    resolution: {tarball: https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/59cc56dbe2cc7311ca9f8b6437b3aefa93c9be9c}
+    version: 1.0.1
 
   fsevents@2.3.3:
     resolution: {integrity: sha512-5xoDfX+fL7faATnagmWPpbFtwh/R77WmMMqqHGS65C3vvB0YHrgF+B1YmZ3441tMj5n63k0212XNoJwzlhffQw==}
@@ -4109,8 +4106,6 @@ snapshots:
       react-dom: 19.2.3(react@19.2.3)
 
   '@floating-ui/utils@0.2.11': {}
-
-  '@fractpath/compute@file:packages/compute': {}
 
   '@humanfs/core@0.19.1': {}
 
@@ -6368,9 +6363,8 @@ snapshots:
     dependencies:
       fetch-blob: 3.2.0
 
-  fractpath-calculator-widget@https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/c337b8289a370bf8474a68ff7183d6c67fe1fa61(@types/node@20.19.37)(vite@8.0.3(@emnapi/core@1.8.1)(@emnapi/runtime@1.8.1)(@types/node@20.19.37)(jiti@2.6.1)):
+  fractpath-calculator-widget@https://codeload.github.com/fractpath/fractpath-calculator-widget/tar.gz/59cc56dbe2cc7311ca9f8b6437b3aefa93c9be9c(@types/node@20.19.37)(vite@8.0.3(@emnapi/core@1.8.1)(@emnapi/runtime@1.8.1)(@types/node@20.19.37)(jiti@2.6.1)):
     dependencies:
-      '@fractpath/compute': file:packages/compute
       react: 19.2.3
       react-dom: 19.2.3(react@19.2.3)
       vitest: 4.1.2(@types/node@20.19.37)(vite@8.0.3(@emnapi/core@1.8.1)(@emnapi/runtime@1.8.1)(@types/node@20.19.37)(jiti@2.6.1))
@@ -7595,7 +7589,7 @@ snapshots:
       magic-string: 0.30.21
       obug: 2.1.1
       pathe: 2.0.3
-      picomatch: 4.0.3
+      picomatch: 4.0.4
       std-env: 4.0.0
       tinybench: 2.9.0
       tinyexec: 1.0.4
